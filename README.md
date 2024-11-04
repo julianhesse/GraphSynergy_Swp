@@ -5,6 +5,7 @@ This is the student software project for Machine Learning for cancer treatment
 - Andreas Klæboe
 - Kerem Aras
 - Felix Trau
+- yousha khadra
 
 # GraphSynergy
 This is our PyTorch implementation for the paper:
