@@ -68,7 +68,7 @@ def main(config):
     # load best checkpoint
     resume = str(config.save_dir / 'model_best.pth')
     logger.info('Loading checkpoint: {} ...'.format(resume))
-    checkpoint = torch.load(resume)
+    checkpoint = torch.load(resume, weights_only=False)
     state_dict = checkpoint['state_dict']
     model.load_state_dict(state_dict)
 
