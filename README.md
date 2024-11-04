@@ -4,7 +4,12 @@ This is the student software project for Machine Learning for cancer treatment
 # Members:
 - Andreas Klæboe
 - Kerem Aras
+<<<<<<< HEAD
 - Julian Hesse
+=======
+- Felix Trau
+- yousha khadra
+>>>>>>> 3891162db91480150778e0bf52b19cd288496454
 
 # GraphSynergy
 This is our PyTorch implementation for the paper:
