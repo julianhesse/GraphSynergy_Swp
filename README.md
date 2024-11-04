@@ -13,11 +13,12 @@ GraphSynergy is a new deep learning framework to make explainable synergistic dr
 
 # Environment Requirement
 The code has been tested running under Python 3.7. The required package are as follows:
-* pytorch == 1.6.0
-* numpy == 1.19.1
-* sklearn == 0.23.2
-* networkx == 2.5
-* pandas == 1.1.2
+* torch==2.5.0
+* numpy==2.1.2 
+* scikit-learn==1.5.2  
+* networkx==3.4.2
+* pandas==2.2.3
+
 
 # Installation
 To install the required packages for running GraphSynergy, please use the following command first
