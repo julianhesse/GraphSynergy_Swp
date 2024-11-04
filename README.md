@@ -1,3 +1,9 @@
+# Project:
+This is the student software project for Machine Learning for cancer treatment
+
+# Members:
+- Andreas Klæboe
+
 # GraphSynergy
 This is our PyTorch implementation for the paper:
 > GraphSynergy: Network Inspired Deep Learning Model for Anti-Cancer Drug Combination Prediction
