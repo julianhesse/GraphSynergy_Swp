@@ -22,14 +22,18 @@ def main(config):
     logger = config.get_logger('train')
 
     # setup data_loader instances
+    # Loads and pre-processes the data
     data_loader = config.init_obj('data_loader', module_data)
+    # creates validation and test datasets
     valid_data_loader = data_loader.split_dataset(valid=True)
     test_data_loader = data_loader.split_dataset(test=True)
+    # get functions extract specific data attributes for use in the model
     feature_index = data_loader.get_feature_index()
     cell_neighbor_set = data_loader.get_cell_neighbor_set()
     drug_neighbor_set = data_loader.get_drug_neighbor_set()
     node_num_dict = data_loader.get_node_num_dict()
 
+    # (an instance of GraphSynergy) is initialized with parameters like protein_num and cell_num
     model = module_arch(protein_num=node_num_dict['protein'],
                         cell_num=node_num_dict['cell'],
                         drug_num=node_num_dict['drug'],
@@ -40,11 +44,15 @@ def main(config):
     logger.info(model)
 
     # get function handles of loss and metrics
+    # Specifies the loss function (error function) from module_loss
     criterion = getattr(module_loss, config['loss'])
+    # List of functions (like accuracy or precision) to evaluate model performance.
     metrics = [getattr(module_metric, met) for met in config['metrics']]
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
+    # List of functions (like accuracy or precision) to evaluate model performance
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+    # Manages gradient updates
     optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
 
     lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
