@@ -72,6 +72,18 @@ class DataLoader(BaseDataLoader):
         cpi_df = pd.read_csv(os.path.join(self.data_dir, 'cell_protein.csv'))
         dpi_df = pd.read_csv(os.path.join(self.data_dir, 'drug_protein.csv'))
 
+        # Remove outliers based on synergy score (using IQR method)
+        Q1 = drug_combination_df['synergy'].quantile(0.25)
+        Q3 = drug_combination_df['synergy'].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - 2.5 * IQR
+        upper_bound = Q3 + 2.5 * IQR
+
+        drug_combination_df = drug_combination_df[
+            (drug_combination_df['synergy'] >= lower_bound) & 
+            (drug_combination_df['synergy'] <= upper_bound)
+        ]
+
         return drug_combination_df, ppi_df, cpi_df, dpi_df
     
     def get_node_map_dict(self):
