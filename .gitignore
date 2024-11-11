@@ -177,3 +177,9 @@ logs/
 models/
 *.h5
 *.model
+
+# Pickled Objects (Temporarily)
+*.pickle
+
+# Generated datasets during runtime
+/data/DrugCombDB/drug_combination_processed.csv
