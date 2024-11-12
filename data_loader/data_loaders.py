@@ -39,6 +39,7 @@ class DataLoader(BaseDataLoader):
         # create dataloader
         super().__init__(self.dataset, batch_size, shuffle, validation_split, test_split, num_workers)
         
+        
         # build the graph
         self.graph = self.build_graph()
         # get target dict
@@ -72,7 +73,8 @@ class DataLoader(BaseDataLoader):
         cpi_df = pd.read_csv(os.path.join(self.data_dir, 'cell_protein.csv'))
         dpi_df = pd.read_csv(os.path.join(self.data_dir, 'drug_protein.csv'))
 
-        # Remove outliers based on synergy score (using IQR method)
+        ### Remove outliers based on synergy score (using IQR method)
+        """""
         Q1 = drug_combination_df['synergy'].quantile(0.25)
         Q3 = drug_combination_df['synergy'].quantile(0.75)
         IQR = Q3 - Q1
@@ -82,6 +84,17 @@ class DataLoader(BaseDataLoader):
         drug_combination_df = drug_combination_df[
             (drug_combination_df['synergy'] >= lower_bound) & 
             (drug_combination_df['synergy'] <= upper_bound)
+        ]
+
+        """
+        
+        # Remove datapoints with concrete synergy score
+        upper_bound = 50
+        lower_bound = -20
+        drug_combination_df = drug_combination_df[
+            (drug_combination_df["synergy"] <= upper_bound) 
+            & 
+            (drug_combination_df["synergy"] >= lower_bound)
         ]
 
         return drug_combination_df, ppi_df, cpi_df, dpi_df

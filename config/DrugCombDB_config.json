@@ -1,6 +1,6 @@
 {
     "name": "DrugCombDB",
-    "n_gpu": 1,
+    "n_gpu": 0,
 
     "arch": {
         "type": "GraphSynergy",
@@ -51,6 +51,6 @@
         "verbosity": 2, 
         "monitor": "max roc_auc",
         "early_stop": 10,
-        "tensorboard": false
+        "tensorboard": true
     }
 }
