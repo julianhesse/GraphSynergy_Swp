@@ -1,5 +1,6 @@
 import json
 import pandas as pd
+import random
 from pathlib import Path
 from itertools import repeat
 from collections import OrderedDict
@@ -24,6 +25,37 @@ def inf_loop(data_loader):
     ''' wrapper function for endless data loader. '''
     for loader in repeat(data_loader):
         yield from loader
+
+def create_folds(df, k, columns):
+    '''k defines the number of folds, columns is a list of names that define the columns that are not supposed to have data leakage'''
+    bucket_size = len(df) // k
+    buckets_space = [bucket_size // k] * 5
+    buckets = [[] for _ in range(k)]
+    grouped_df = df.groupby(columns)
+    result_data = []
+    for (col1, col2), group in grouped_df:
+        indices = group.index.tolist()
+        count = len(indices)
+        result_data.append([col1, col2, indices, count])
+    result_df = pd.DataFrame(result_data, columns=(columns+['indices', 'count']))
+    result_df = result_df.sort_values(by='count', ascending=False).reset_index(drop=True)
+
+    for _, row in result_df.iterrows():
+        bucket_index = random.randint(0,k-1)
+        # check if bucket has enough space
+        if buckets_space[bucket_index] < row.iloc[3]:
+            checked = 1
+            while checked < k:
+                if bucket_index == k-1:
+                    bucket_index = 0
+                else:
+                    bucket_index += 1
+                if buckets_space[bucket_index] > row.iloc[3]:
+                    break
+                checked += 1
+        buckets[bucket_index] += row.iloc[2]
+        buckets_space[bucket_index] = buckets_space[bucket_index] - row.iloc[3]
+    return buckets
 
 class MetricTracker:
     def __init__(self, *keys, writer=None):
