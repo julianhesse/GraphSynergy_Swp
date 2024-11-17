@@ -8,7 +8,9 @@ class BaseDataLoader(DataLoader):
     """
     Base class for all data loaders
     """
-    def __init__(self, dataset, batch_size, shuffle, validation_split, test_split, num_workers, collate_fn=default_collate):
+
+    def __init__(self, dataset, batch_size, shuffle, validation_split, test_split, num_workers,
+                 collate_fn=default_collate):
         self.validation_split = validation_split
         self.test_split = test_split
         self.shuffle = shuffle
@@ -38,18 +40,18 @@ class BaseDataLoader(DataLoader):
             assert self.validation_split < self.n_samples or self.test_split < self.n_samples, \
                 "validation set size is configured to be larger than entire dataset."
             len_valid = self.validation_split
-            len_test  = self.test_split
+            len_test = self.test_split
         else:
             len_valid = int(self.n_samples * self.validation_split)
-            len_test  = int(self.n_samples * self.test_split)
+            len_test = int(self.n_samples * self.test_split)
 
         valid_idx = idx_full[0:len_valid]
-        test_idx  = idx_full[len_valid: (len_valid+len_test)]
-        train_idx = np.delete(idx_full, np.arange(0, len_valid+len_test))
+        test_idx = idx_full[len_valid: (len_valid + len_test)]
+        train_idx = np.delete(idx_full, np.arange(0, len_valid + len_test))
 
         train_sampler = SubsetRandomSampler(train_idx)
         valid_sampler = SubsetRandomSampler(valid_idx)
-        test_sampler  = SubsetRandomSampler(test_idx)
+        test_sampler = SubsetRandomSampler(test_idx)
 
         # turn off shuffle option which is mutually exclusive with sampler
         self.shuffle = False

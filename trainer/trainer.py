@@ -3,20 +3,21 @@ import torch
 from base import BaseTrainer
 from utils import inf_loop, MetricTracker
 
+
 class Trainer(BaseTrainer):
-    def __init__(self, 
-                 model, 
-                 criterion, 
-                 metric_fns, 
-                 optimizer, 
-                 config, 
+    def __init__(self,
+                 model,
+                 criterion,
+                 metric_fns,
+                 optimizer,
+                 config,
                  data_loader,
-                 feature_index, 
-                 cell_neighbor_set, 
-                 drug_neighbor_set, 
-                 valid_data_loader=None, 
-                 test_data_loader=None, 
-                 lr_scheduler=None, 
+                 feature_index,
+                 cell_neighbor_set,
+                 drug_neighbor_set,
+                 valid_data_loader=None,
+                 test_data_loader=None,
+                 lr_scheduler=None,
                  len_epoch=None):
         super().__init__(model, criterion, metric_fns, optimizer, config)
         self.config = config
@@ -33,7 +34,7 @@ class Trainer(BaseTrainer):
             # iteration-based training
             self.data_loader = inf_loop(data_loader)
             self.len_epoch = len_epoch
-        
+
         self.valid_data_loader = valid_data_loader
         self.test_data_loader = test_data_loader
 
@@ -70,7 +71,7 @@ class Trainer(BaseTrainer):
                 y_true = target.cpu().detach().numpy()
                 for met in self.metric_fns:
                     self.train_metrics.update(met.__name__, met(y_pred, y_true))
-            
+
             if batch_idx % self.log_step == 0:
                 self.logger.debug('Train Epoch: {} {} Loss: {:.6f}'.format(
                     epoch,
@@ -84,8 +85,8 @@ class Trainer(BaseTrainer):
 
         if self.do_validation:
             val_log = self._valid_epoch(epoch)
-            log.update(**{'val_'+k : v for k, v in val_log.items()})
-            log['validation'] = {'val_'+k : v for k, v in val_log.items()}
+            log.update(**{'val_' + k: v for k, v in val_log.items()})
+            log['validation'] = {'val_' + k: v for k, v in val_log.items()}
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
@@ -107,7 +108,7 @@ class Trainer(BaseTrainer):
                 y_true = target.cpu().detach().numpy()
                 for met in self.metric_fns:
                     self.valid_metrics.update(met.__name__, met(y_pred, y_true))
-        
+
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
             self.writer.add_histogram(name, p, bins='auto')
@@ -131,11 +132,11 @@ class Trainer(BaseTrainer):
                 y_true = target.cpu().detach().numpy()
                 for i, metric in enumerate(self.metric_fns):
                     total_metrics[i] += metric(y_pred, y_true) * batch_size
-        
-        test_output = {'n_samples': len(self.test_data_loader.sampler), 
-                       'total_loss': total_loss, 
+
+        test_output = {'n_samples': len(self.test_data_loader.sampler),
+                       'total_loss': total_loss,
                        'total_metrics': total_metrics}
-        
+
         return test_output
 
     def get_save(self, save_files):
@@ -143,7 +144,7 @@ class Trainer(BaseTrainer):
         for key, value in save_files.items():
             if type(value) == dict:
                 temp = dict()
-                for k,v in value.items():
+                for k, v in value.items():
                     temp[k] = v.cpu().detach().numpy()
             else:
                 temp = value.cpu().detach().numpy()
@@ -158,14 +159,14 @@ class Trainer(BaseTrainer):
         cells_neighbors, drugs1_neighbors, drugs2_neighbors = [], [], []
         for hop in range(self.model.n_hop):
             cells_neighbors.append(torch.LongTensor([self.cell_neighbor_set[c][hop] \
-                                                       for c in cells.numpy()]).to(self.device))
+                                                     for c in cells.numpy()]).to(self.device))
             drugs1_neighbors.append(torch.LongTensor([self.drug_neighbor_set[d][hop] \
-                                                          for d in drugs1.numpy()]).to(self.device))
+                                                      for d in drugs1.numpy()]).to(self.device))
             drugs2_neighbors.append(torch.LongTensor([self.drug_neighbor_set[d][hop] \
-                                                          for d in drugs2.numpy()]).to(self.device))
-        
+                                                      for d in drugs2.numpy()]).to(self.device))
+
         return cells.to(self.device), drugs1.to(self.device), drugs2.to(self.device), \
-               cells_neighbors, drugs1_neighbors, drugs2_neighbors
+            cells_neighbors, drugs1_neighbors, drugs2_neighbors
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'

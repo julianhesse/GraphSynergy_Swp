@@ -9,22 +9,23 @@ import torch.utils.data as Data
 
 from base import BaseDataLoader
 
+
 class DataLoader(BaseDataLoader):
-    def __init__(self, 
-                 data_dir, 
-                 batch_size, 
+    def __init__(self,
+                 data_dir,
+                 batch_size,
                  score='synergy 0',
-                 n_hop=2, 
-                 n_memory=32, 
-                 shuffle=True, 
+                 n_hop=2,
+                 n_memory=32,
+                 shuffle=True,
                  validation_split=0.1,
-                 test_split=0.2, 
+                 test_split=0.2,
                  num_workers=1):
         self.data_dir = data_dir
         self.score, self.threshold = score.split(' ')
         self.n_hop = n_hop
         self.n_memory = n_memory
-        
+
         # load data
         self.drug_combination_df, self.ppi_df, self.cpi_df, self.dpi_df = self.load_data()
         # get node map
@@ -38,7 +39,7 @@ class DataLoader(BaseDataLoader):
         self.dataset = self.create_dataset()
         # create dataloader
         super().__init__(self.dataset, batch_size, shuffle, validation_split, test_split, num_workers)
-        
+
         # build the graph
         self.graph = self.build_graph()
         # get target dict
@@ -53,7 +54,7 @@ class DataLoader(BaseDataLoader):
                                                        item_target_dict=self.drug_protein_dict)
         # save data
         self._save()
-        
+
     def get_cell_neighbor_set(self):
         return self.cell_neighbor_set
 
@@ -73,24 +74,25 @@ class DataLoader(BaseDataLoader):
         dpi_df = pd.read_csv(os.path.join(self.data_dir, 'drug_protein.csv'))
 
         return drug_combination_df, ppi_df, cpi_df, dpi_df
-    
+
     def get_node_map_dict(self):
         protein_node = list(set(self.ppi_df['protein_a']) | set(self.ppi_df['protein_b']))
         cell_node = list(set(self.cpi_df['cell']))
         drug_node = list(set(self.dpi_df['drug']))
 
         node_num_dict = {'protein': len(protein_node), 'cell': len(cell_node), 'drug': len(drug_node)}
-        
-        mapping = {protein_node[idx]:idx for idx in range(len(protein_node))}
-        mapping.update({cell_node[idx]:idx for idx in range(len(cell_node))})
-        mapping.update({drug_node[idx]:idx for idx in range(len(drug_node))})
+
+        mapping = {protein_node[idx]: idx for idx in range(len(protein_node))}
+        mapping.update({cell_node[idx]: idx for idx in range(len(cell_node))})
+        mapping.update({drug_node[idx]: idx for idx in range(len(drug_node))})
 
         # display data info
         print('undirected graph')
         print('# proteins: {0}, # drugs: {1}, # cells: {2}'.format(
-                len(protein_node), len(drug_node), len(cell_node)))
-        print('# protein-protein interactions: {0}, # drug-protein associations: {1}, # cell-protein associations: {2}'.format(
-            len(self.ppi_df), len(self.dpi_df), len(self.cpi_df)))
+            len(protein_node), len(drug_node), len(cell_node)))
+        print(
+            '# protein-protein interactions: {0}, # drug-protein associations: {1}, # cell-protein associations: {2}'.format(
+                len(self.ppi_df), len(self.dpi_df), len(self.cpi_df)))
 
         return mapping, node_num_dict
 
@@ -115,7 +117,7 @@ class DataLoader(BaseDataLoader):
         self.drug_combination_df['synergistic'] = [0] * len(self.drug_combination_df)
         self.drug_combination_df.loc[self.drug_combination_df[self.score] > eval(self.threshold), 'synergistic'] = 1
         self.drug_combination_df.to_csv(os.path.join(self.data_dir, 'drug_combination_processed.csv'), index=False)
-        
+
         self.drug_combination_df = self.drug_combination_df[['cell', 'drug1_db', 'drug2_db', 'synergistic']]
 
         return {'cell': 0, 'drug1': 1, 'drug2': 2}
@@ -130,17 +132,17 @@ class DataLoader(BaseDataLoader):
         cp_dict = collections.defaultdict(list)
         cell_list = list(set(self.cpi_df['cell']))
         for cell in cell_list:
-            cell_df = self.cpi_df[self.cpi_df['cell']==cell]
+            cell_df = self.cpi_df[self.cpi_df['cell'] == cell]
             target = list(set(cell_df['protein']))
             cp_dict[cell] = target
-        
+
         dp_dict = collections.defaultdict(list)
         drug_list = list(set(self.dpi_df['drug']))
         for drug in drug_list:
-            drug_df = self.dpi_df[self.dpi_df['drug']==drug]
+            drug_df = self.dpi_df[self.dpi_df['drug'] == drug]
             target = list(set(drug_df['protein']))
             dp_dict[drug] = target
-        
+
         return cp_dict, dp_dict
 
     def create_dataset(self):
@@ -176,7 +178,7 @@ class DataLoader(BaseDataLoader):
                     # sample
                     replace = len(neighbors) < self.n_memory
                     target_list = list(np.random.choice(neighbors, size=self.n_memory, replace=replace))
-                
+
                 neighbor_set[item].append(target_list)
 
         return neighbor_set
@@ -188,7 +190,3 @@ class DataLoader(BaseDataLoader):
             pickle.dump(self.cell_neighbor_set, f)
         with open(os.path.join(self.data_dir, 'drug_neighbor_set.pickle'), 'wb') as f:
             pickle.dump(self.drug_neighbor_set, f)
-
-
-
-
