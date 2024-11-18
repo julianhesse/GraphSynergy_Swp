@@ -8,7 +8,7 @@ import model.metric as module_metric
 from model.GraphSynergy import GraphSynergy as module_arch
 from parse_config import ConfigParser
 from trainer.trainer import Trainer
-
+from cross_validation import cross_validation
 # fix random seeds for reproducibility
 SEED = 42
 torch.manual_seed(SEED)
@@ -20,19 +20,16 @@ np.random.seed(SEED)
 def main(config):
     """Training."""
     logger = config.get_logger('train')
-
-    # setup data_loader instances
-    # Loads and pre-processes the data
     data_loader = config.init_obj('data_loader', module_data)
-    # creates validation and test datasets
     valid_data_loader = data_loader.split_dataset(valid=True)
     test_data_loader = data_loader.split_dataset(test=True)
-    # get functions extract specific data attributes for use in the model
+    use_cross_validation = config['trainer'].get('use_cross_validation', False)
+    num_folds = config['trainer'].get('num_folds', 5)
+
     feature_index = data_loader.get_feature_index()
     cell_neighbor_set = data_loader.get_cell_neighbor_set()
     drug_neighbor_set = data_loader.get_drug_neighbor_set()
     node_num_dict = data_loader.get_node_num_dict()
-
     # (an instance of GraphSynergy) is initialized with parameters like protein_num and cell_num
     model = module_arch(protein_num=node_num_dict['protein'],
                         cell_num=node_num_dict['cell'],
@@ -42,7 +39,6 @@ def main(config):
                         l1_decay=config['arch']['args']['l1_decay'],
                         therapy_method=config['arch']['args']['therapy_method'])
     logger.info(model)
-
     # get function handles of loss and metrics
     # Specifies the loss function (error function) from module_loss
     criterion = getattr(module_loss, config['loss'])
@@ -56,18 +52,45 @@ def main(config):
     optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
 
     lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
+    # setup data_loader instances
+    # Loads and pre-processes the data
+    if use_cross_validation:
+        print(f"Using Cross-Validation with {num_folds} folds...")
+        for fold, (train_data, val_data) in enumerate(cross_validation(data_loader, n_splits=num_folds)):
+            print(f"Starting fold {fold + 1}...")
+            
+            train_data_loader = torch.utils.data.DataLoader(
+                train_data, batch_size=config['data_loader']['args']['batch_size'], shuffle=True)
+            
+            val_data_loader = torch.utils.data.DataLoader(
+                val_data, batch_size=config['data_loader']['args']['batch_size'], shuffle=False)
 
-    trainer = Trainer(model, criterion, metrics, optimizer,
-                      config=config,
-                      data_loader=data_loader,
-                      feature_index=feature_index,
-                      cell_neighbor_set=cell_neighbor_set,
-                      drug_neighbor_set=drug_neighbor_set,
-                      valid_data_loader=valid_data_loader,
-                      test_data_loader=test_data_loader,
-                      lr_scheduler=lr_scheduler)
+            trainer = Trainer(model, criterion, metrics, optimizer,
+                              config=config,
+                              data_loader=train_data_loader,
+                              feature_index=feature_index,
+                              cell_neighbor_set=cell_neighbor_set,
+                              drug_neighbor_set=drug_neighbor_set,
+                              valid_data_loader=val_data_loader,
+                              test_data_loader=test_data_loader,
+                              lr_scheduler=lr_scheduler)
+            trainer.train()
+    else:
+        print("Cross-Validation is disabled. Running regular training...")
+        
+        trainer = Trainer(model, criterion, metrics, optimizer,
+                          config=config,
+                          data_loader=data_loader,
+                          feature_index=feature_index,
+                          cell_neighbor_set=cell_neighbor_set,
+                          drug_neighbor_set=drug_neighbor_set,
+                          valid_data_loader=valid_data_loader,
+                          test_data_loader=test_data_loader,
+                          lr_scheduler=lr_scheduler)
     trainer.train()
-
+    
+    # get functions extract specific data attributes for use in the model
+   
     """Testing."""
     logger = config.get_logger('test')
     logger.info(model)
