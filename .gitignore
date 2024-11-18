@@ -77,7 +77,6 @@ docs/_build/
 *.iws
 
 # PyCharm Python Console history
-.idea/
 
 # Virtual environments
 .env/
@@ -114,9 +113,6 @@ celerybeat.pid
 # Environments
 .env
 .venv
-ENV/
-env/
-venv/
 
 # Spyder project settings
 .spyderproject

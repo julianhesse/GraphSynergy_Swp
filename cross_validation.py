@@ -1,3 +1,8 @@
+"""
+Run the following command from the command line:
+    python cross_validation.py --config ./config/DrugCombDB_cv_config.json
+"""
+
 import argparse
 import collections
 import torch
@@ -25,7 +30,6 @@ def main(config):
     # setup data_loader instances
     # Loads and pre-processes the data
     data_loader = config.init_obj('data_loader', module_data)
-    # creates validation and test datasets
     # get functions extract specific data attributes for use in the model
     feature_index = data_loader.get_feature_index()
     cell_neighbor_set = data_loader.get_cell_neighbor_set()
@@ -48,7 +52,7 @@ def main(config):
     # List of functions (like accuracy or precision) to evaluate model performance.
     metrics = [getattr(module_metric, met) for met in config['metrics']]
 
-    # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
+    # build optimizer, learning rate scheduler. delete every line containing lr_scheduler for disabling scheduler
     # List of functions (like accuracy or precision) to evaluate model performance
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     # Manages gradient updates
@@ -56,9 +60,11 @@ def main(config):
 
     lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
 
+    # get folds from the data_loader and iterate through each
     for fold_id in data_loader.get_fold_indices().keys():
+        # assign row indices of folds to be training, validation and test indices (as described in cv_base_data_loader)
         data_loader.set_folds(fold_id)
-
+        # assign the fold indices accordingly to be training, validation and test sets (as described in cv_base_data_loader)
         train_loader = data_loader.get_train_loader()
         val_loader = data_loader.get_val_loader()
         test_loader = data_loader.get_test_loader()
@@ -68,6 +74,7 @@ def main(config):
         print(f"  Validation set: {len(val_loader.dataset)} samples")
         print(f"  Testing set: {len(test_loader.dataset)} samples")
 
+        # Initialize the training with the matching sets as arguments and begin training
         trainer = Trainer(model, criterion, metrics, optimizer,
                           config=config,
                           data_loader=train_loader,
@@ -98,7 +105,7 @@ def main(config):
             for i, met in enumerate(test_metrics)
         })
         logger.info(log)
-
+    # Exit successfully
     print("Cross validation completed successfully:")
 
 

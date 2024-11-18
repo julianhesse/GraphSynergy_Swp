@@ -134,17 +134,20 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
         graph.add_edges_from(tuples)
         return graph
 
-    #################### ADDED FUNCTION #########################
+    '''
+    GRAPH MANIPULATION
+    '''
 
-    def build_randomized_graph(self, portion):
-        keep = 1 - portion
+    def build_randomized_graph(self, drop_ratio):
         tuples = [tuple(x) for x in self.ppi_df.values]
-        edges = random.sample(tuples, len(tuples) * keep)
+        remove_edges = random.sample(tuples, int(len(tuples) * drop_ratio))
+        if drop_ratio == 0:
+            assert remove_edges == [] or None, "The number of edges to be removed is not 0 despite drop_ratio being 0"
         graph = nx.Graph()
-        graph.add_edges_from(edges)
+        graph.add_edges_from(tuples)
+        graph.remove_edges_from(remove_edges)
         return graph
 
-    #############################################################
     def get_target_dict(self):
         cp_dict = collections.defaultdict(list)
         cell_list = list(set(self.cpi_df['cell']))
@@ -176,23 +179,31 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
         dataset = Data.TensorDataset(feature, label)
         return dataset
 
-    ######################## ADDED FUNCTION #############################
+    '''
+    Get indices of rows to be added to each fold
+    '''
 
     def create_fold_indices(self, n_folds=5):
+        # copy drug combination dataframe to preserve original
         df_copy = self.drug_combination_df.copy()
+        # add new column with tuples that are sorted containing each drug combination (ChatGPT)
         df_copy['drug_combination'] = df_copy.apply(lambda row: tuple(sorted([row['drug1_db'], row['drug2_db']])),
                                                     axis=1)
+        # library that stores folds as keys and row indices as values
         fold_indices = collections.defaultdict(list)
+        # iterate through each unique drug combination
         for idx, combo in enumerate(df_copy['drug_combination'].unique()):
+            # identify rows with drug combination
             row_idx = self.drug_combination_df.loc[df_copy['drug_combination'] == combo].index
+            # rotate through the folds throughout the loop
             fold = idx % n_folds
+            # add rows with drug combination to fold
             fold_indices[fold].extend(row_idx)
 
-        assert sum([len(x) for x in fold_indices.values()]) == len(self.drug_combination_df)
+        # total number of indices from the folds must be equal to the dataset  size
+        assert sum([len(x) for x in fold_indices.values()]) == len(self.drug_combination_df), "Folds do not have the same number of items as the dataset"
 
         return fold_indices
-
-    #####################################################################
 
     def get_neighbor_set(self, items, item_target_dict):
         print('constructing neighbor set ...')
