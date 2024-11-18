@@ -8,12 +8,12 @@
             "emb_dim": 64,
             "n_hop": 2,
             "l1_decay": 1e-6,
-            "therapy_method": "transformation_matrix" 
+            "therapy_method": "transformation_matrix"
         }
     },
     "data_loader": {
         "type": "DataLoader",
-        "args":{
+        "args": {
             "data_dir": "data/DrugCombDB/",
             "batch_size": 512,
             "score": "synergy 0",
@@ -27,7 +27,7 @@
     },
     "optimizer": {
         "type": "Adam",
-        "args":{
+        "args": {
             "lr": 0.001,
             "weight_decay": 1e-4,
             "amsgrad": true
@@ -48,9 +48,11 @@
         "epochs": 50,
         "save_dir": "saved/",
         "save_period": 100,
-        "verbosity": 2, 
+        "verbosity": 2,
         "monitor": "max roc_auc",
         "early_stop": 10,
-        "tensorboard": false
+        "tensorboard": false,
+        "use_cross_validation": false,  
+        "num_folds": 5 
     }
 }
