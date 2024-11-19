@@ -88,6 +88,7 @@ class DataLoader(BaseDataLoader):
 
         """
         
+        """"
         # Remove datapoints with concrete synergy score
         upper_bound = 50
         lower_bound = -20
@@ -96,6 +97,12 @@ class DataLoader(BaseDataLoader):
             & 
             (drug_combination_df["synergy"] >= lower_bound)
         ]
+        """
+
+        polluted_cells = ["MOLT4", "HDLM2", "L1236", "L428", "RPMI8226", "HL60", "K562"]
+        mask = ~((drug_combination_df["cell"].isin(polluted_cells)) & (drug_combination_df["synergy"] > 40))
+        drug_combination_df = drug_combination_df[mask]
+
 
         return drug_combination_df, ppi_df, cpi_df, dpi_df
     
