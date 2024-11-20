@@ -1,6 +1,7 @@
 import torch
 from sklearn import metrics
 
+
 def accuracy(y_pred, y_true):
     """
     Note that the input y_pred and y_true are both numpy array.
@@ -10,6 +11,7 @@ def accuracy(y_pred, y_true):
     """
     return metrics.accuracy_score(y_pred=y_pred.round(), y_true=y_true)
 
+
 def precision(y_pred, y_true):
     """
     Note that the input y_pred and y_true are both numpy array.
@@ -18,6 +20,7 @@ def precision(y_pred, y_true):
         y_true (numpy.array): [description]
     """
     return metrics.precision_score(y_pred=y_pred.round(), y_true=y_true)
+
 
 def recall(y_pred, y_true):
     """
@@ -31,6 +34,7 @@ def recall(y_pred, y_true):
     """
     return metrics.recall_score(y_pred=y_pred.round(), y_true=y_true)
 
+
 def roc_auc(y_pred, y_true):
     """
     The values of y_pred can be decimicals, within 0 and 1.
@@ -41,11 +45,22 @@ def roc_auc(y_pred, y_true):
     Returns:
         [type]: [description]
     """
+    try:
+        metrics.roc_auc_score(y_score=y_pred, y_true=y_true)
+    except ValueError:
+        print("ROC AUC score failed, calculating MCC instead...")
+        return metrics.matthews_corrcoef(y_pred=y_pred, y_true=y_true)
+
     return metrics.roc_auc_score(y_score=y_pred, y_true=y_true)
+
 
 def pr_auc(y_pred, y_true):
     return metrics.average_precision_score(y_score=y_pred, y_true=y_true)
 
+
 def f1_score(y_pred, y_true):
     return metrics.f1_score(y_pred=y_pred.round(), y_true=y_true)
 
+
+def mcc(y_pred, y_true):
+    return metrics.matthews_corrcoef(y_pred=y_pred.round(), y_true=y_true)
