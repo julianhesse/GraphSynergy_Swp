@@ -36,32 +36,31 @@ def main(config):
     drug_neighbor_set = data_loader.get_drug_neighbor_set()
     node_num_dict = data_loader.get_node_num_dict()
 
-    # (an instance of GraphSynergy) is initialized with parameters like protein_num and cell_num
-    model = module_arch(protein_num=node_num_dict['protein'],
-                        cell_num=node_num_dict['cell'],
-                        drug_num=node_num_dict['drug'],
-                        emb_dim=config['arch']['args']['emb_dim'],
-                        n_hop=config['arch']['args']['n_hop'],
-                        l1_decay=config['arch']['args']['l1_decay'],
-                        therapy_method=config['arch']['args']['therapy_method'])
-    logger.info(model)
-
-    # get function handles of loss and metrics
-    # Specifies the loss function (error function) from module_loss
-    criterion = getattr(module_loss, config['loss'])
-    # List of functions (like accuracy or precision) to evaluate model performance.
-    metrics = [getattr(module_metric, met) for met in config['metrics']]
-
-    # build optimizer, learning rate scheduler. delete every line containing lr_scheduler for disabling scheduler
-    # List of functions (like accuracy or precision) to evaluate model performance
-    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    # Manages gradient updates
-    optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
-
-    lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
-
     # get folds from the data_loader and iterate through each
     for fold_id in data_loader.get_fold_indices().keys():
+        # (an instance of GraphSynergy) is initialized with parameters like protein_num and cell_num
+        model = module_arch(protein_num=node_num_dict['protein'],
+                            cell_num=node_num_dict['cell'],
+                            drug_num=node_num_dict['drug'],
+                            emb_dim=config['arch']['args']['emb_dim'],
+                            n_hop=config['arch']['args']['n_hop'],
+                            l1_decay=config['arch']['args']['l1_decay'],
+                            therapy_method=config['arch']['args']['therapy_method'])
+        logger.info(model)
+
+        # get function handles of loss and metrics
+        # Specifies the loss function (error function) from module_loss
+        criterion = getattr(module_loss, config['loss'])
+        # List of functions (like accuracy or precision) to evaluate model performance.
+        metrics = [getattr(module_metric, met) for met in config['metrics']]
+
+        # build optimizer, learning rate scheduler. delete every line containing lr_scheduler for disabling scheduler
+        # List of functions (like accuracy or precision) to evaluate model performance
+        trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+        # Manages gradient updates
+        optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
+
+        lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
         # assign row indices of folds to be training, validation and test indices (as described in cv_base_data_loader)
         data_loader.set_folds(fold_id)
         # assign the fold indices accordingly to be training, validation and test sets (as described in cv_base_data_loader)
