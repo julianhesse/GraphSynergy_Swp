@@ -130,6 +130,9 @@ class ConfigParser:
     @property
     def log_dir(self):
         return self._log_dir
+    
+    def uses_cross_validation(self):
+        return self['data_loader'].get('cross_validation', False)
 
 # helper functions to update config dict with custom cli options
 def _update_config(config, modification):

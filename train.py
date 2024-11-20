@@ -80,6 +80,72 @@ def main(config):
     })
     logger.info(log)
 
+def main_cross_validation(config):
+    """Training."""
+
+    # setup data_loader instances
+    data_loader = config.init_obj('data_loader', module_data)
+    
+    for fold, train_data_loader, valid_data_loader, test_data_loader in data_loader:
+    # for output in iter(data_loader):
+        logger = config.get_logger(f'train-f{fold}')
+        logger.info(f"Cross Validation Fold: {fold}")
+        feature_index = data_loader.feature_index
+        cell_neighbor_set = data_loader.cell_neighbor_set
+        drug_neighbor_set = data_loader.drug_neighbor_set
+        node_num_dict = data_loader.node_num_dict
+
+        model = module_arch(protein_num=node_num_dict['protein'],
+                            cell_num=node_num_dict['cell'],
+                            drug_num=node_num_dict['drug'],
+                            emb_dim=config['arch']['args']['emb_dim'],
+                            n_hop=config['arch']['args']['n_hop'],
+                            l1_decay=config['arch']['args']['l1_decay'],
+                            therapy_method=config['arch']['args']['therapy_method'])
+        logger.info(model)
+
+        # get function handles of loss and metrics
+        criterion = getattr(module_loss, config['loss'])
+        metrics = [getattr(module_metric, met) for met in config['metrics']]
+
+        # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
+        trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+        optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
+
+        lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
+
+        trainer = Trainer(model, criterion, metrics, optimizer,
+                        config=config,
+                        data_loader=train_data_loader,
+                        feature_index=feature_index,
+                        cell_neighbor_set=cell_neighbor_set,
+                        drug_neighbor_set=drug_neighbor_set,
+                        valid_data_loader=valid_data_loader,
+                        test_data_loader=test_data_loader,
+                        lr_scheduler=lr_scheduler,
+                        fold=fold)
+        trainer.train()
+
+        """Testing."""
+        logger = config.get_logger(f'test-f{fold}')
+        logger.info(model)
+        test_metrics = [getattr(module_metric, met) for met in config['metrics']]
+        
+        # load best checkpoint
+        resume = str(config.save_dir / 'model_best.pth')
+        logger.info('Loading checkpoint: {} ...'.format(resume))
+        checkpoint = torch.load(resume, weights_only=False)
+        state_dict = checkpoint['state_dict']
+        model.load_state_dict(state_dict)
+
+        test_output = trainer.test()
+        log = {'loss': test_output['total_loss'] / test_output['n_samples']}
+        log.update({
+            met.__name__: test_output['total_metrics'][i].item() / test_output['n_samples'] \
+                for i, met in enumerate(test_metrics)
+        })
+        logger.info(log)
+
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')
     args.add_argument('-c', '--config', default=None, type=str,
@@ -96,4 +162,8 @@ if __name__ == '__main__':
         CustomArgs(['--bs', '--batch_size'], type=int, target='data_loader;args;batch_size')
     ]
     config = ConfigParser.from_args(args, options)
-    main(config)
+
+    if config.uses_cross_validation():
+        main_cross_validation(config)
+    else:
+        main(config)

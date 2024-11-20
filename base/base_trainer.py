@@ -8,9 +8,13 @@ class BaseTrainer:
     """
     Base class for all trainers
     """
-    def __init__(self, model, criterion, metric_fns, optimizer, config):
+    def __init__(self, model, criterion, metric_fns, optimizer, config, fold=None):
         self.config = config
-        self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
+        if fold:
+            self.logger = config.get_logger(f'trainer-f{fold}', config['trainer']['verbosity'])
+        else:
+            self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
+        self.fold = fold
 
         # setup GPU device if available, move model into configured device
         self.device, device_ids = self._prepare_device(config['n_gpu'])
@@ -142,9 +146,13 @@ class BaseTrainer:
             'config': self.config
         }
         if save_best:
-            best_path = str(self.checkpoint_dir / 'model_best.pth')
+            if self.fold is not None:
+                best_path = str(self.checkpoint_dir / f'model_best_fold_{self.fold}.pth')
+                self.logger.info(f"Saving current best: model_best_fold_{self.fold}.pth ...")
+            else:
+                best_path = str(self.checkpoint_dir / 'model_best.pth')
+                self.logger.info(f"Saving current best: model_best.pth ...")
             torch.save(state, best_path)
-            self.logger.info("Saving current best: model_best.pth ...")
         else:
             filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
             torch.save(state, filename)

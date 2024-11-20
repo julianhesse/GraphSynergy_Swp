@@ -17,7 +17,8 @@ class Trainer(BaseTrainer):
                  valid_data_loader=None, 
                  test_data_loader=None, 
                  lr_scheduler=None, 
-                 len_epoch=None):
+                 len_epoch=None,
+                 fold=None):
         super().__init__(model, criterion, metric_fns, optimizer, config)
         self.config = config
         # for data

@@ -40,6 +40,18 @@ python train.py --config ./config/DrugCombDB_config.json
 ```bash
 python train.py --config ./config/OncologyScreen_config.json
 ```
+* DrugCombDB with cross-validation
+```bash
+python train.py --config ./config/DrugCombDB_cv_config.json
+```
+
+# Cross-Validation
+
+In config set data loader to type `CVDataLoader`.
+Further configuration:
+- `folds : int` Number of folds (at least 3 for 1 validation and test fold)
+- `validation_split : float` Split of training used for validation
+
 
 # Dataset
 Datasets used in the paper:
