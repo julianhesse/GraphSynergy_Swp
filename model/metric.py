@@ -49,7 +49,7 @@ def roc_auc(y_pred, y_true):
         metrics.roc_auc_score(y_score=y_pred, y_true=y_true)
     except ValueError:
         print("ROC AUC score failed, calculating MCC instead...")
-        return metrics.matthews_corrcoef(y_pred=y_pred, y_true=y_true)
+        return metrics.matthews_corrcoef(y_pred=y_pred.round(), y_true=y_true)
 
     return metrics.roc_auc_score(y_score=y_pred, y_true=y_true)
 
