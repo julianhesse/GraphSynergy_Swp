@@ -1,58 +1,56 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
-# البيانات التي لديك (مع Cross-Validation)
-epochs = [1, 2, 3, 4, 5, 6]
-train_loss_cv = [0.76, 0.59, 0.55, 0.53, 0.51, 0.50]
-val_loss_cv = [0.62, 0.58, 0.56, 0.54, 0.54, 0.53]
-train_accuracy_cv = [0.62, 0.70, 0.73, 0.75, 0.76, 0.76]
-val_accuracy_cv = [0.68, 0.71, 0.73, 0.73, 0.74, 0.74]
-train_roc_auc_cv = [0.66, 0.77, 0.81, 0.83, 0.84, 0.84]
-val_roc_auc_cv = [0.74, 0.78, 0.80, 0.81, 0.82, 0.82]
+# Metrics for cross-validation (6 folds, including the last one)
+cross_validation_metrics = {
+    'loss': [0.40, 0.41, 0.40, 0.40, 0.40, 0.40],
+    'accuracy': [0.82, 0.82, 0.82, 0.82, 0.82, 0.82],
+    'precision': [0.81, 0.81, 0.81, 0.81, 0.82, 0.82],
+    'recall': [0.79, 0.79, 0.79, 0.79, 0.79, 0.79],
+    'roc_auc': [0.90, 0.90, 0.90, 0.90, 0.90, 0.90],
+    'pr_auc': [0.89, 0.89, 0.89, 0.89, 0.89, 0.89],
+    'f1_score': [0.80, 0.80, 0.80, 0.80, 0.80, 0.80],
+}
 
-# البيانات التي لديك (بدون Cross-Validation)
-epochs_no_cv = [1, 2,3,4,5,6]
-train_loss_no_cv = [0.78, 0.60, 0.56, 0.53, 0.52,0.50]
-val_loss_no_cv = [0.63, 0.59,0.58,0.56,0.56,0.56]
-train_accuracy_no_cv = [0.61, 0.70,0.73,0.74,0.75,0.76]
-val_accuracy_no_cv = [0.67, 0.70,0.72,0.73,0.73,0.73]
-train_roc_auc_no_cv = [0.64, 0.77,0.8,0.82,0.83,0.84]
-val_roc_auc_no_cv = [0.73, 0.77,0.79,0.8,0.8,0.81]
+# No-cross-validation metrics
+no_cross_validation_metrics = {
+    'loss': 0.52,
+    'accuracy': 0.76,
+    'precision': 0.75,
+    'recall': 0.73,
+    'roc_auc': 0.84,
+    'pr_auc': 0.82,
+    'f1_score': 0.74,
+}
 
-# رسم منحنيات الخسارة
-plt.figure(figsize=(12, 6))
-plt.plot(epochs, train_loss_cv, label='Training Loss (CV)', marker='o')
-plt.plot(epochs, val_loss_cv, label='Validation Loss (CV)', marker='o')
-plt.plot(epochs_no_cv, train_loss_no_cv, label='Training Loss (No CV)', marker='x')
-plt.plot(epochs_no_cv, val_loss_no_cv, label='Validation Loss (No CV)', marker='x')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Training vs. Validation Loss (With and Without Cross-Validation)')
-plt.legend()
-plt.grid(True)
-plt.show()
+# Averaging the cross-validation metrics
+averaged_metrics = {metric: np.mean(values) for metric, values in cross_validation_metrics.items()}
 
-# رسم منحنيات الدقة
-plt.figure(figsize=(12, 6))
-plt.plot(epochs, train_accuracy_cv, label='Training Accuracy (CV)', marker='o')
-plt.plot(epochs, val_accuracy_cv, label='Validation Accuracy (CV)', marker='o')
-plt.plot(epochs_no_cv, train_accuracy_no_cv, label='Training Accuracy (No CV)', marker='x')
-plt.plot(epochs_no_cv, val_accuracy_no_cv, label='Validation Accuracy (No CV)', marker='x')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy')
-plt.title('Training vs. Validation Accuracy (With and Without Cross-Validation)')
-plt.legend()
-plt.grid(True)
-plt.show()
+# Prepare the plot
+metrics = list(no_cross_validation_metrics.keys())
+cross_validation_values = [averaged_metrics[metric] for metric in metrics]
+no_cross_validation_values = [no_cross_validation_metrics[metric] for metric in metrics]
 
-# رسم منحنيات ROC-AUC
-plt.figure(figsize=(12, 6))
-plt.plot(epochs, train_roc_auc_cv, label='Training ROC AUC (CV)', marker='o')
-plt.plot(epochs, val_roc_auc_cv, label='Validation ROC AUC (CV)', marker='o')
-plt.plot(epochs_no_cv, train_roc_auc_no_cv, label='Training ROC AUC (No CV)', marker='x')
-plt.plot(epochs_no_cv, val_roc_auc_no_cv, label='Validation ROC AUC (No CV)', marker='x')
-plt.xlabel('Epoch')
-plt.ylabel('ROC AUC')
-plt.title('Training vs. Validation ROC AUC (With and Without Cross-Validation)')
-plt.legend()
-plt.grid(True)
+x = np.arange(len(metrics))  # Number of metrics
+width = 0.35  # Bar width
+
+fig, ax = plt.subplots(figsize=(10, 6))
+bars1 = ax.bar(x - width / 2, cross_validation_values, width, label='Cross-Validation (6 Folds)', color='blue', alpha=0.7)
+bars2 = ax.bar(x + width / 2, no_cross_validation_values, width, label='No Cross-Validation', color='red', alpha=0.7)
+
+# Add text and labels
+ax.set_xlabel('Metrics', fontsize=12)
+ax.set_ylabel('Values', fontsize=12)
+ax.set_title('Performance Comparison: Cross-Validation vs No Cross-Validation', fontsize=14)
+ax.set_xticks(x)
+ax.set_xticklabels(metrics, rotation=45, fontsize=10)
+ax.legend(fontsize=10)
+
+# Annotate values on the bars
+for bars in [bars1, bars2]:
+    for bar in bars:
+        yval = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width() / 2, yval + 0.01, f'{yval:.2f}', ha='center', va='bottom', fontsize=10)
+
+plt.tight_layout()
 plt.show()
