@@ -9,6 +9,7 @@ from model.GraphSynergy import GraphSynergy as module_arch
 from parse_config import ConfigParser
 from trainer.trainer import Trainer
 from cross_validation import cross_validation
+
 # fix random seeds for reproducibility
 SEED = 42
 torch.manual_seed(SEED)
@@ -56,6 +57,7 @@ def main(config):
     # Loads and pre-processes the data
     if use_cross_validation:
         print(f"Using Cross-Validation with {num_folds} folds...")
+        
         for fold, (train_data, val_data) in enumerate(cross_validation(data_loader, n_splits=num_folds)):
             print(f"Starting fold {fold + 1}...")
             
@@ -64,6 +66,9 @@ def main(config):
             
             val_data_loader = torch.utils.data.DataLoader(
                 val_data, batch_size=config['data_loader']['args']['batch_size'], shuffle=False)
+            
+            assert len(set(train_data.indices).intersection(set(val_data.indices))) == 0, \
+                f"Data leakage detected in fold {fold + 1} between training and validation sets!"
 
             trainer = Trainer(model, criterion, metrics, optimizer,
                               config=config,
