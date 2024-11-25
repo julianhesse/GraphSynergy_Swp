@@ -13,6 +13,7 @@
     },
     "data_loader": {
         "type": "DataLoader",
+        "cross_validation": false,
         "args":{
             "data_dir": "data/DrugCombDB/",
             "batch_size": 512,
@@ -51,6 +52,6 @@
         "verbosity": 2, 
         "monitor": "max roc_auc",
         "early_stop": 10,
-        "tensorboard": false
+        "tensorboard": true
     }
 }

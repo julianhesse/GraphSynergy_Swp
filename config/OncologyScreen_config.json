@@ -13,6 +13,7 @@
     },
     "data_loader": {
         "type": "DataLoader",
+        "cross_validation": false,
         "args":{
             "data_dir": "data/OncologyScreen/",
             "batch_size": 512,

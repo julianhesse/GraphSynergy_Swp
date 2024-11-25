@@ -214,7 +214,7 @@ class CVDataLoader:
         self.init_kwargs = {
             'batch_size': batch_size,
             'shuffle': shuffle,
-            # 'collate_fn': default_collate,
+            'collate_fn': default_collate,
             'num_workers': num_workers
         }
 
@@ -354,33 +354,6 @@ class CVDataLoader:
         return self
 
     def __next__(self):
-        # pass
-        # for i, (train_index, test_index) in enumerate(self._group_kfold.split(self.features, self.labels, self._groups)):
-        #     self.fold = i
-
-        #     # train and validation split
-        #     # TODO: leakage free validation split
-        #     X_train, X_val, y_train, y_val = train_test_split(self.features[train_index], self.labels[train_index],
-        #                                                          test_size=self.validation_split, random_state=42,
-        #                                                          shuffle=True, stratify=None)
-            
-        #     # get test data
-        #     X_test, y_test = self.features[test_index], self.features[test_index]
-            
-        #     # convert to Dataset for DataLoader
-        #     training_data = Data.TensorDataset(X_train, y_train)
-        #     validation_data = Data.TensorDataset(X_train, y_train)
-        #     test_data = Data.TensorDataset(X_train, y_train)
-
-        #     # DataLoader for each set
-        #     train_dataloader = torch.utils.data.DataLoader(training_data, **self.init_kwargs)
-        #     val_dataloader = torch.utils.data.DataLoader(validation_data, **self.init_kwargs)
-        #     test_dataloader = torch.utils.data.DataLoader(test_data, **self.init_kwargs)
-            
-        #     yield self.fold, train_dataloader, val_dataloader, test_dataloader
-            
-        # raise StopIteration
-
         if self.fold < self.folds:
             # train and validation split
             # TODO: leakage free validation split
