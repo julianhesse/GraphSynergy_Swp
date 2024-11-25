@@ -170,6 +170,7 @@ checkpoints/
 
 # Machine learning artifacts
 logs/
+log/
 models/
 *.h5
 *.model
