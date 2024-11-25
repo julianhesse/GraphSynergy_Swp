@@ -1,0 +1,72 @@
+{
+    "name": "DrugCombDB",
+    "n_gpu": 1,
+    "data_loader": {
+        "type": "DataLoader",
+        "args":{
+            "data_dir": "data/DrugCombDB/",
+            "score": "synergy 0",
+            "shuffle": true,
+            "validation_split": 0.1,
+            "test_split": 0.2,
+            "num_workers": 2
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.001,
+            "weight_decay": 1e-4,
+            "amsgrad": true
+        }
+    },
+    "loss": "bce_withlogits_loss",
+    "metrics": [
+        "accuracy", "precision", "recall", "roc_auc", "pr_auc", "f1_score", "mcc"
+    ],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 20,
+            "gamma": 0.1
+        }
+    },
+    "trainer": {
+        "epochs": 50,
+        "save_dir": "saved/",
+        "save_period": 100,
+        "verbosity": 1,
+        "monitor": "max roc_auc",
+        "early_stop": 10,
+        "tensorboard": true
+    },
+    "sweep_config": {
+        "name": "DrugCombDB Optimization Sweep",
+        "description": "Optimize emb_dim, n_hop, n_memory, l1_decay, and batch_size for MCC",
+        "method": "bayes",
+        "metric": {
+            "name": "val_roc_auc",
+            "goal": "maximize"
+        },
+        "parameters": {
+            "emb_dim": {
+                "values": [32, 64, 128, 256]
+            },
+            "n_hop": {
+                "values": [1, 2, 3, 4]
+            },
+            "n_memory": {
+                "values": [64, 128, 256]
+            },
+            "l1_decay": {
+                "values": [1e-4, 1e-5, 1e-6]
+            },
+            "therapy_method": {
+                "values": ["transformation_matrix", "weighted_inner_product", "max_pooling"]
+            },
+            "batch_size": {
+                "values": [128, 256, 512]
+            }
+        }
+}
+}
