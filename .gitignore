@@ -180,3 +180,6 @@ models/
 
 # Generated datasets during runtime
 /data/DrugCombDB/drug_combination_processed.csv
+saved/log/
+saved/models/
+

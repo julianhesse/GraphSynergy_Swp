@@ -120,7 +120,14 @@ class BaseTrainer:
             self.logger.warning("Warning: The number of GPU\'s configured to use is {}, but only {} are available "
                                 "on this machine.".format(n_gpu_use, n_gpu))
             n_gpu_use = n_gpu
-        device = torch.device('cuda:0' if n_gpu_use > 0 else 'cpu')
+        if torch.backends.mps.is_available():
+            self.logger.info("Apple Device detected: using Metal Performance Shaders (MPS)")
+            device = torch.device('mps' if n_gpu_use > 0 else 'cpu')
+        elif n_gpu_use > 0:
+            self.logger.info("CUDA Device detected: using NVIDIA GPU")
+            device = torch.device('cuda:0')
+        else:
+            device = torch.device('cpu')
         list_ids = list(range(n_gpu_use))
         return device, list_ids
 
