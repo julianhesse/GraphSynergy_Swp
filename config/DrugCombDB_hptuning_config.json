@@ -38,14 +38,15 @@
         "verbosity": 1,
         "monitor": "max roc_auc",
         "early_stop": 10,
-        "tensorboard": true
+        "tensorboard": false
     },
+    "run_sweep": true,
     "sweep_config": {
         "name": "DrugCombDB Optimization Sweep",
         "description": "Optimize emb_dim, n_hop, n_memory, l1_decay, and batch_size for MCC",
         "method": "bayes",
         "metric": {
-            "name": "val_roc_auc",
+            "name": "val_mcc",
             "goal": "maximize"
         },
         "parameters": {
@@ -65,8 +66,13 @@
                 "values": ["transformation_matrix", "weighted_inner_product", "max_pooling"]
             },
             "batch_size": {
-                "values": [128, 256, 512]
+                "values": [128, 256, 512, 1024]
             }
+        },
+        "early_terminate": {
+            "type": "hyperband",
+            "min_iter": 1,
+            "eta": 3
         }
-}
+    }
 }

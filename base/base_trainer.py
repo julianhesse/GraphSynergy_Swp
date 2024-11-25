@@ -3,6 +3,8 @@ from abc import abstractmethod
 from numpy import inf
 from logger import TensorboardWriter
 
+import wandb
+
 
 class BaseTrainer:
     """
@@ -62,6 +64,8 @@ class BaseTrainer:
         """
         Full training logic
         """
+
+        use_wandb = wandb.run is not None
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
             result = self._train_epoch(epoch)
@@ -69,6 +73,19 @@ class BaseTrainer:
             # save logged informations into log dict
             log = {'epoch': epoch}
             log.update(result)
+
+            # Conditionally log to WandB
+            if use_wandb:
+                # Flatten train and validation metrics for better visualization
+                wandb_log_data = {'epoch': epoch}
+                if 'train' in log:
+                    wandb_log_data.update({f"train_{k}": v for k, v in log['train'].items()})
+                if 'validation' in log:
+                    wandb_log_data.update({
+                        k if k.startswith("val_") else f"val_{k}": v
+                        for k, v in log['validation'].items()
+                    })
+                wandb.log(wandb_log_data)
 
             # print logged informations to the screen
             self.logger.info('epoch: {}'.format(epoch))

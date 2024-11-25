@@ -131,8 +131,11 @@ if __name__ == '__main__':
     ]
     config = ConfigParser.from_args(args, options)
 
-    wandb.login()
-    sweep = getitem(config, 'sweep_config')
-    sweep_id = wandb.sweep(sweep=sweep, project="graphsynergy_swp")
-    wandb.tensorboard.patch(save=True, pytorch=True)
-    wandb.agent(sweep_id=sweep_id, function=main_wrapper(config), project="graphsynergy_swp")
+    if config['run_sweep']:
+        wandb.login()
+        sweep = getitem(config, 'sweep_config')
+        sweep_id = wandb.sweep(sweep=sweep, project="graphsynergy_swp")
+        print(f"Sweep ID: {sweep_id}")
+        wandb.agent(sweep_id=sweep_id, function=main_wrapper(config), project="graphsynergy_swp")
+    else:
+        main(config)
