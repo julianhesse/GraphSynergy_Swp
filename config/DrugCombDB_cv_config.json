@@ -50,6 +50,7 @@
         "verbosity": 2, 
         "monitor": "max mcc",
         "early_stop": 10,
-        "tensorboard": false
+        "tensorboard": false,
+        "log_metrics": true
     }
 }

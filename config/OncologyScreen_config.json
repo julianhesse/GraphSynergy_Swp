@@ -51,6 +51,7 @@
         "verbosity": 2, 
         "monitor": "max roc_auc",
         "early_stop": 10,
-        "tensorboard": false
+        "tensorboard": false,
+        "log_metrics": true
     }
 }

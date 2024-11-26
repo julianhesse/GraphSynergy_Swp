@@ -118,6 +118,13 @@ class ConfigParser:
         logger.setLevel(self.log_levels[verbosity])
         return logger
 
+    @property
+    def has_fold(self):
+        if hasattr(self, 'fold_id'):
+            return True
+        else:
+            return False
+
     # setting read-only attributes
     @property
     def config(self):
