@@ -55,14 +55,17 @@ class Trainer(BaseTrainer):
         self.model.train()
         self.train_metrics.reset()
         for batch_idx, (data, target) in enumerate(self.data_loader):
+            # calculate loss
             target = target.to(self.device)
             output, emb_loss = self.model(*self._get_feed_dict(data))
             loss = self.criterion(output, target.squeeze()) + emb_loss
 
+            # backpropagation
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
 
+            # logging
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update('loss', loss.item())
             with torch.no_grad():

@@ -32,7 +32,7 @@ class BaseTrainer:
             self.mnt_mode = 'off'
             self.mnt_best = 0
         else:
-            # mnt_mode determines minimum or maximum metrix is best, if we use loss, thus mnt_mode = min
+            # mnt_mode determines minimum or maximum metric is best, if we use loss, thus mnt_mode = min
             self.mnt_mode, self.mnt_metric = self.monitor.split()
             assert self.mnt_mode in ['min', 'max']
 
