@@ -1,12 +1,12 @@
 {
     "name": "DrugCombDB",
-    "n_gpu": 1,
+    "n_gpu": 0,
 
     "arch": {
         "type": "GraphSynergy",
         "args": {
             "emb_dim": 64,
-            "n_hop": 2,
+            "n_hop": 1,
             "l1_decay": 1e-6,
             "therapy_method": "transformation_matrix" 
         }
