@@ -2,6 +2,7 @@ import argparse
 import collections
 import torch
 import numpy as np
+import pandas as pd
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
@@ -87,6 +88,12 @@ def main(config):
             for i, met in enumerate(test_metrics)
     })
     logger.info(log)
+
+    results = pd.Series(log)
+    results.to_csv(config.save_dir / 'results.csv', index=False)
+    logger.info(f"Results of testing saved to 'results.csv'")
+    print("Training completed successfully:")
+    print(results)
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')
