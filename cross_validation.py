@@ -117,7 +117,7 @@ def main(config):
     # Exit successfully
     print("Cross validation completed successfully:")
     test_results = pd.DataFrame(test_results)
-    test_results.to_csv(config.save_dir / 'test_results.csv', index=False)
+    test_results.to_csv(config.log_dir / 'test_results.csv', index=False)
     print(test_results)
 
 
