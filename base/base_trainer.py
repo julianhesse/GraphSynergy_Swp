@@ -1,4 +1,5 @@
 import torch
+import pandas as pd
 from abc import abstractmethod
 from numpy import inf
 from logger import TensorboardWriter
@@ -12,7 +13,10 @@ class BaseTrainer:
     """
     def __init__(self, model, criterion, metric_fns, optimizer, config):
         self.config = config
-        self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
+        if config.has_fold:
+            self.logger = config.get_logger(f'trainer-f{self.config.fold_id}', config['trainer']['verbosity'])
+        else:
+            self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
 
         # setup GPU device if available, move model into configured device
         self.device, device_ids = self._prepare_device(config['n_gpu'])
@@ -34,7 +38,7 @@ class BaseTrainer:
             self.mnt_mode = 'off'
             self.mnt_best = 0
         else:
-            # mnt_mode determines minimum or maximum metrix is best, if we use loss, thus mnt_mode = min
+            # mnt_mode determines minimum or maximum metric is best, if we use loss, thus mnt_mode = min
             self.mnt_mode, self.mnt_metric = self.monitor.split()
             assert self.mnt_mode in ['min', 'max']
 
@@ -47,6 +51,10 @@ class BaseTrainer:
 
         # setup visualization writer instance                
         self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
+
+        # setup metric logger
+        self.log_metrics = cfg_trainer.get('log_metrics', False)
+        self.log_dir = config.log_dir
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
@@ -67,6 +75,7 @@ class BaseTrainer:
 
         use_wandb = wandb.run is not None
         not_improved_count = 0
+        metrics = []
         for epoch in range(self.start_epoch, self.epochs + 1):
             result = self._train_epoch(epoch)
 
@@ -108,6 +117,13 @@ class BaseTrainer:
                 value_format = ''.join(['{:15s}: {:.2f}\t'.format(k, v) for k, v in log[key].items()])
                 self.logger.info('    {:15s}: {}'.format(str(key), value_format))
 
+            # collect metrics for later analysis
+            if self.log_metrics:
+                epoch_metrics = {'epoch': int(epoch)}
+                epoch_metrics.update(log.get('train', {}))
+                epoch_metrics.update(log.get('validation', {}))
+                metrics.append(pd.Series(epoch_metrics))
+
             # evaluate model performance according to configured metric, save best checkpoint as model_best
             best = False
             if self.mnt_mode != 'off':
@@ -136,6 +152,14 @@ class BaseTrainer:
 
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=False)
+
+        # save the metrics
+        if self.log_metrics:
+            metrics = pd.DataFrame(metrics)
+            if self.config.has_fold:
+                metrics.to_csv(self.log_dir / f'metrics_fold_{self.config.fold_id}.csv', index=False)
+            else:
+                metrics.to_csv(self.log_dir / 'metrics.csv', index=False)
 
     def _prepare_device(self, n_gpu_use):
         """
@@ -179,11 +203,19 @@ class BaseTrainer:
             'config': self.config
         }
         if save_best:
-            best_path = str(self.checkpoint_dir / 'model_best.pth')
-            torch.save(state, best_path)
-            self.logger.info("Saving current best: model_best.pth ...")
+            if self.config.has_fold:
+                best_path = str(self.checkpoint_dir / f'model_best_fold_{self.config.fold_id}.pth')
+                torch.save(state, best_path)
+                self.logger.info(f"Saving current best: model_best_fold_{self.config.fold_id}.pth ...")
+            else:
+                best_path = str(self.checkpoint_dir / 'model_best.pth')
+                torch.save(state, best_path)
+                self.logger.info("Saving current best: model_best.pth ...")
         else:
-            filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
+            if self.config.has_fold:
+                filename = str(self.checkpoint_dir / 'checkpoint-epoch{}_fold{}.pth'.format(epoch, self.config.fold_id))
+            else:
+                filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
             torch.save(state, filename)
             self.logger.info("Saving checkpoint: {} ...".format(filename))
 

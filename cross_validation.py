@@ -7,6 +7,7 @@ import argparse
 import collections
 import torch
 import numpy as np
+import pandas as pd
 import data_loader_cross_val.cv_data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
@@ -25,7 +26,7 @@ np.random.seed(SEED)
 
 def main(config):
     """Training."""
-    logger = config.get_logger('train')
+    logger = config.get_logger('data loading')
 
     # setup data_loader instances
     # Loads and pre-processes the data
@@ -36,8 +37,13 @@ def main(config):
     drug_neighbor_set = data_loader.get_drug_neighbor_set()
     node_num_dict = data_loader.get_node_num_dict()
 
+    test_results = []
     # get folds from the data_loader and iterate through each
     for fold_id in data_loader.get_fold_indices().keys():
+        # setup config and logger for new fold
+        config.fold_id = fold_id
+        logger = config.get_logger(f'train-f{fold_id}')
+
         # (an instance of GraphSynergy) is initialized with parameters like protein_num and cell_num
         model = module_arch(protein_num=node_num_dict['protein'],
                             cell_num=node_num_dict['cell'],
@@ -86,12 +92,12 @@ def main(config):
         trainer.train()
 
         """Testing."""
-        logger = config.get_logger('test')
+        logger = config.get_logger(f'test-fold-f{fold_id}')
         logger.info(model)
         test_metrics = [getattr(module_metric, met) for met in config['metrics']]
 
         # load best checkpoint
-        resume = str(config.save_dir / 'model_best.pth')
+        resume = str(config.save_dir / f'model_best_fold_{fold_id}.pth')
         logger.info('Loading checkpoint: {} ...'.format(resume))
         checkpoint = torch.load(resume, weights_only=False)
         state_dict = checkpoint['state_dict']
@@ -104,8 +110,15 @@ def main(config):
             for i, met in enumerate(test_metrics)
         })
         logger.info(log)
+        
+        results = {'fold_id': fold_id}
+        results.update(log)
+        test_results.append(pd.Series(results))
     # Exit successfully
     print("Cross validation completed successfully:")
+    test_results = pd.DataFrame(test_results)
+    test_results.to_csv(config.log_dir / 'test_results.csv', index=False)
+    print(test_results)
 
 
 if __name__ == '__main__':
