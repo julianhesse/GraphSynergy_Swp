@@ -21,11 +21,15 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
                  n_memory=32,
                  num_folds=5,
                  shuffle=True,
-                 num_workers=1):
+                 num_workers=1,
+                 graph_building_function="build_graph",
+                 graph_ratio=0.1):
         self.data_dir = data_dir
         self.score, self.threshold = score.split(' ')
         self.n_hop = n_hop
         self.n_memory = n_memory
+        self.graph_building_function = graph_building_function
+        self.graph_ratio = graph_ratio
         # load data
         self.drug_combination_df, self.ppi_df, self.cpi_df, self.dpi_df = self.load_data()
         # get node map
@@ -44,7 +48,15 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
         super().__init__(self.dataset, batch_size, self.fold_indices, shuffle, num_workers)
 
         # build the graph
-        self.graph = self.build_graph()
+        try:
+            if self.graph_building_function == "build_graph":
+                self.graph = self.build_graph()
+            else:
+                graph_method = getattr(self, self.graph_building_function)
+                self.graph = graph_method(self.graph_ratio)
+        except AttributeError:
+            raise ValueError(f"Invalid graph building function: {self.graph_building_function}")
+        
         # get target dict
         self.cell_protein_dict, self.drug_protein_dict = self.get_target_dict()
         # some indexs
@@ -139,6 +151,12 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
     '''
 
     def build_randomized_graph(self, drop_ratio):
+        """
+        Randomly remove edges of the graph based on the given ratios.
+
+        :param drop_ratio: Ratio of edges to be removed from the total number of edges in the graph
+        :return: Modified graph
+        """
         tuples = [tuple(x) for x in self.ppi_df.values]
         remove_edges = random.sample(tuples, int(len(tuples) * drop_ratio))
         if drop_ratio == 0:
@@ -146,6 +164,19 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
         graph = nx.Graph()
         graph.add_edges_from(tuples)
         graph.remove_edges_from(remove_edges)
+        return graph
+    
+    def rewire_graph(self, ratio_rewire):
+        """
+        Randomly reassign edges of the graph while preserving the node degrees based on the given ratio.
+
+        :param ratio_rewire: Ratio of edge rewirings to perform from the total number of edges
+        :return: Rewired graph
+        """
+        graph = self.build_graph()
+        total_edges = graph.number_of_edges()
+        num_rewirings = int(ratio_rewire * total_edges)
+        nx.double_edge_swap(graph, nswap=num_rewirings, max_tries=num_rewirings * 10, seed=42)
         return graph
 
     def get_target_dict(self):
