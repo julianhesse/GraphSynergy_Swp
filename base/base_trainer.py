@@ -78,13 +78,26 @@ class BaseTrainer:
             if use_wandb:
                 # Flatten train and validation metrics for better visualization
                 wandb_log_data = {'epoch': epoch}
-                if 'train' in log:
-                    wandb_log_data.update({f"train_{k}": v for k, v in log['train'].items()})
-                if 'validation' in log:
-                    wandb_log_data.update({
-                        k if k.startswith("val_") else f"val_{k}": v
-                        for k, v in log['validation'].items()
-                    })
+                train_metrics = log.get('train', {})
+                val_metrics = log.get('validation', {})
+
+                # Add train and validation metrics to WandB log data
+                wandb_log_data.update({f"train_{k}": v for k, v in train_metrics.items()})
+
+                # Add validation metrics with 'val_' prefix, avoiding redundant prefixes
+                wandb_log_data.update({
+                    k if k.startswith("val_") else f"val_{k}": v
+                    for k, v in val_metrics.items()
+                })
+
+                # Calculate and log metric gaps between training and validation
+                for metric_name in train_metrics.keys():
+                    val_metric_name = f"val_{metric_name}"
+                    if val_metric_name in val_metrics:  # Ensure the metric exists in both train and validation
+                        gap = train_metrics[metric_name] - val_metrics[val_metric_name]
+                        wandb_log_data[f"gap_{metric_name}"] = gap
+
+                # Log all data to WandB
                 wandb.log(wandb_log_data)
 
             # print logged informations to the screen

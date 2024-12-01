@@ -39,7 +39,7 @@ def main(config):
     # setup data_loader instances
     # Loads and pre-processes the data
     data_loader = module_data.DataLoader(data_dir=config['data_loader']['args']['data_dir'],
-                                         batch_size=sweep_config['batch_size'],
+                                         batch_size=config['data_loader']['args']['batch_size'],
                                          score=config['data_loader']['args']['score'],
                                          n_hop=sweep_config['n_hop'],
                                          n_memory=sweep_config['n_memory'],
@@ -59,8 +59,8 @@ def main(config):
                         drug_num=node_num_dict['drug'],
                         emb_dim=sweep_config['emb_dim'],
                         n_hop=sweep_config['n_hop'],
-                        l1_decay=sweep_config['l1_decay'],
-                        therapy_method=sweep_config['therapy_method'])
+                        l1_decay=config['arch']['args']['l1_decay'],
+                        therapy_method=config['arch']['args']['therapy_method'])
     logger.info(model)
 
     # get function handles of loss and metrics
@@ -131,7 +131,6 @@ if __name__ == '__main__':
     ]
     config = ConfigParser.from_args(args, options)
 
-<<<<<<< HEAD
     if config['run_sweep']:
         wandb.login()
         sweep = getitem(config, 'sweep_config')
@@ -140,10 +139,3 @@ if __name__ == '__main__':
         wandb.agent(sweep_id=sweep_id, function=main_wrapper(config), project="graphsynergy_swp")
     else:
         main(config)
-=======
-    wandb.login()
-    sweep = getitem(config, 'sweep_config')
-    sweep_id = wandb.sweep(sweep=sweep, project="graphsynergy_swp")
-    wandb.tensorboard.patch(save=True, pytorch=True)
-    wandb.agent(sweep_id=sweep_id, function=main_wrapper(config), project="graphsynergy_swp")
->>>>>>> origin/kerem
