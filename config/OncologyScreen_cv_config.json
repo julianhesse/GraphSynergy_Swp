@@ -1,20 +1,20 @@
 {
-    "name": "DrugCombDB",
+    "name": "OncologyScreen",
     "n_gpu": 1,
 
     "arch": {
         "type": "GraphSynergy",
         "args": {
-            "emb_dim": 64,
+            "emb_dim": 32,
             "n_hop": 2,
-            "l1_decay": 1e-6,
+            "l1_decay": 1e-5,
             "therapy_method": "transformation_matrix" 
         }
     },
     "data_loader": {
         "type": "CrossValidationDataLoader",
         "args":{
-            "data_dir": "data/DrugCombDB/",
+            "data_dir": "data/OncologyScreen/",
             "batch_size": 512,
             "score": "synergy 0",
             "n_hop": 2,
@@ -30,7 +30,7 @@
         "type": "Adam",
         "args":{
             "lr": 0.001,
-            "weight_decay": 1e-4,
+            "weight_decay": 1e-6,
             "amsgrad": true
         }
     },

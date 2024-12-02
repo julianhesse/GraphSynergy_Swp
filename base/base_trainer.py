@@ -177,7 +177,7 @@ class BaseTrainer:
         if torch.backends.mps.is_available():
             self.logger.info("Apple Device detected: using Metal Performance Shaders (MPS)")
             device = torch.device('mps' if n_gpu_use > 0 else 'cpu')
-        elif n_gpu_use > 0:
+        elif n_gpu_use > 0 and n_gpu > 0:
             self.logger.info("CUDA Device detected: using NVIDIA GPU")
             device = torch.device('cuda:0')
         else:

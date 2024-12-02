@@ -18,6 +18,7 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
+
 def main(config):
     """Training."""
     logger = config.get_logger('train')
@@ -73,7 +74,7 @@ def main(config):
     logger = config.get_logger('test')
     logger.info(model)
     test_metrics = [getattr(module_metric, met) for met in config['metrics']]
-    
+
     # load best checkpoint
     resume = str(config.save_dir / 'model_best.pth')
     logger.info('Loading checkpoint: {} ...'.format(resume))
@@ -85,7 +86,7 @@ def main(config):
     log = {'loss': test_output['total_loss'] / test_output['n_samples']}
     log.update({
         met.__name__: test_output['total_metrics'][i].item() / test_output['n_samples'] \
-            for i, met in enumerate(test_metrics)
+        for i, met in enumerate(test_metrics)
     })
     logger.info(log)
 
@@ -94,6 +95,7 @@ def main(config):
     logger.info(f"Results of testing saved to 'results.csv'")
     print("Training completed successfully:")
     print(results)
+
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')

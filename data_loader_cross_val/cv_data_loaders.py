@@ -49,11 +49,14 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
 
         # build the graph
         try:
+            # case where the graph is built using the build_graph method
             if self.graph_building_function == "build_graph":
                 self.graph = self.build_graph()
             else:
+                # case where the model is built using edge shuffling implementations
                 graph_method = getattr(self, self.graph_building_function)
                 self.graph = graph_method(self.graph_ratio)
+        # insure that a valid graph building function is provided
         except AttributeError:
             raise ValueError(f"Invalid graph building function: {self.graph_building_function}")
         
@@ -176,6 +179,7 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
         graph = self.build_graph()
         total_edges = graph.number_of_edges()
         num_rewirings = int(ratio_rewire * total_edges)
+        # double edge swap is used to preserve the node degrees while also randomly assigning edges
         nx.double_edge_swap(graph, nswap=num_rewirings, max_tries=num_rewirings * 10, seed=42)
         return graph
 

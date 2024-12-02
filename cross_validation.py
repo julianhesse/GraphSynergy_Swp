@@ -27,97 +27,117 @@ np.random.seed(SEED)
 def main(config):
     """Training."""
     logger = config.get_logger('data loading')
+    # specify the graph building method to use as well as the corresponding ratios
+    graph_function = config['data_loader']['args']['graph_building_function']
+    graph_ratios = config['data_loader']['args']['graph_ratios']
 
-    # setup data_loader instances
-    # Loads and pre-processes the data
-    data_loader = config.init_obj('data_loader', module_data)
-    # get functions extract specific data attributes for use in the model
-    feature_index = data_loader.get_feature_index()
-    cell_neighbor_set = data_loader.get_cell_neighbor_set()
-    drug_neighbor_set = data_loader.get_drug_neighbor_set()
-    node_num_dict = data_loader.get_node_num_dict()
-
+    used_db = config['name']
     test_results = []
-    # get folds from the data_loader and iterate through each
-    for fold_id in data_loader.get_fold_indices().keys():
-        # setup config and logger for new fold
-        config.fold_id = fold_id
-        logger = config.get_logger(f'train-f{fold_id}')
 
-        # (an instance of GraphSynergy) is initialized with parameters like protein_num and cell_num
-        model = module_arch(protein_num=node_num_dict['protein'],
-                            cell_num=node_num_dict['cell'],
-                            drug_num=node_num_dict['drug'],
-                            emb_dim=config['arch']['args']['emb_dim'],
-                            n_hop=config['arch']['args']['n_hop'],
-                            l1_decay=config['arch']['args']['l1_decay'],
-                            therapy_method=config['arch']['args']['therapy_method'])
-        logger.info(model)
+    for ratio in graph_ratios:
+        logger.info(f"Graph Function: {graph_function}, Graph Ratio: {ratio}")
 
-        # get function handles of loss and metrics
-        # Specifies the loss function (error function) from module_loss
-        criterion = getattr(module_loss, config['loss'])
-        # List of functions (like accuracy or precision) to evaluate model performance.
-        metrics = [getattr(module_metric, met) for met in config['metrics']]
+        # setup data_loader instances
+        # Loads and pre-processes the data
+        data_loader = module_data.CrossValidationDataLoader(
+            data_dir=config['data_loader']['args']['data_dir'],
+            batch_size=config['data_loader']['args']['batch_size'],
+            score=config['data_loader']['args']['score'],
+            n_hop=config['data_loader']['args']['n_hop'],
+            n_memory=config['data_loader']['args']['n_memory'],
+            num_folds=config['data_loader']['args']['num_folds'],
+            shuffle=config['data_loader']['args']['shuffle'],
+            num_workers=config['data_loader']['args']['num_workers'],
+            graph_building_function=graph_function,
+            graph_ratio=ratio
+        )
+        # get functions extract specific data attributes for use in the model
+        feature_index = data_loader.get_feature_index()
+        cell_neighbor_set = data_loader.get_cell_neighbor_set()
+        drug_neighbor_set = data_loader.get_drug_neighbor_set()
+        node_num_dict = data_loader.get_node_num_dict()
 
-        # build optimizer, learning rate scheduler. delete every line containing lr_scheduler for disabling scheduler
-        # List of functions (like accuracy or precision) to evaluate model performance
-        trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-        # Manages gradient updates
-        optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
+        # get folds from the data_loader and iterate through each
+        for fold_id in data_loader.get_fold_indices().keys():
+            # setup config and logger for new fold
+            config.fold_id = fold_id
+            logger = config.get_logger(f'train-f{fold_id}')
 
-        lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
-        # assign row indices of folds to be training, validation and test indices (as described in cv_base_data_loader)
-        data_loader.set_folds(fold_id)
-        # assign the fold indices accordingly to be training, validation and test sets (as described in cv_base_data_loader)
-        train_loader = data_loader.get_train_loader()
-        val_loader = data_loader.get_val_loader()
-        test_loader = data_loader.get_test_loader()
+            # (an instance of GraphSynergy) is initialized with parameters like protein_num and cell_num
+            model = module_arch(protein_num=node_num_dict['protein'],
+                                cell_num=node_num_dict['cell'],
+                                drug_num=node_num_dict['drug'],
+                                emb_dim=config['arch']['args']['emb_dim'],
+                                n_hop=config['arch']['args']['n_hop'],
+                                l1_decay=config['arch']['args']['l1_decay'],
+                                therapy_method=config['arch']['args']['therapy_method'])
+            logger.info(model)
 
-        print(f"Fold {fold_id}:")
-        print(f"  Training set: {len(train_loader.dataset)} samples")
-        print(f"  Validation set: {len(val_loader.dataset)} samples")
-        print(f"  Testing set: {len(test_loader.dataset)} samples")
+            # get function handles of loss and metrics
+            # Specifies the loss function (error function) from module_loss
+            criterion = getattr(module_loss, config['loss'])
+            # List of functions (like accuracy or precision) to evaluate model performance.
+            metrics = [getattr(module_metric, met) for met in config['metrics']]
 
-        # Initialize the training with the matching sets as arguments and begin training
-        trainer = Trainer(model, criterion, metrics, optimizer,
-                          config=config,
-                          data_loader=train_loader,
-                          feature_index=feature_index,
-                          cell_neighbor_set=cell_neighbor_set,
-                          drug_neighbor_set=drug_neighbor_set,
-                          valid_data_loader=val_loader,
-                          test_data_loader=test_loader,
-                          lr_scheduler=lr_scheduler)
-        trainer.train()
+            # build optimizer, learning rate scheduler. delete every line containing lr_scheduler for disabling scheduler
+            # List of functions (like accuracy or precision) to evaluate model performance
+            trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+            # Manages gradient updates
+            optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
 
-        """Testing."""
-        logger = config.get_logger(f'test-fold-f{fold_id}')
-        logger.info(model)
-        test_metrics = [getattr(module_metric, met) for met in config['metrics']]
+            lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
+            # assign row indices of folds to be training, validation and test indices (as described in cv_base_data_loader)
+            data_loader.set_folds(fold_id)
+            # assign the fold indices accordingly to be training, validation and test sets (as described in cv_base_data_loader)
+            train_loader = data_loader.get_train_loader()
+            val_loader = data_loader.get_val_loader()
+            test_loader = data_loader.get_test_loader()
 
-        # load best checkpoint
-        resume = str(config.save_dir / f'model_best_fold_{fold_id}.pth')
-        logger.info('Loading checkpoint: {} ...'.format(resume))
-        checkpoint = torch.load(resume, weights_only=False)
-        state_dict = checkpoint['state_dict']
-        model.load_state_dict(state_dict)
+            print(f"Fold {fold_id}:")
+            print(f"  Training set: {len(train_loader.dataset)} samples")
+            print(f"  Validation set: {len(val_loader.dataset)} samples")
+            print(f"  Testing set: {len(test_loader.dataset)} samples")
 
-        test_output = trainer.test()
-        log = {'loss': test_output['total_loss'] / test_output['n_samples']}
-        log.update({
-            met.__name__: test_output['total_metrics'][i].item() / test_output['n_samples'] \
-            for i, met in enumerate(test_metrics)
-        })
-        logger.info(log)
-        
-        results = {'fold_id': fold_id}
-        results.update(log)
-        test_results.append(pd.Series(results))
-    # Exit successfully
-    print("Cross validation completed successfully:")
+            # Initialize the training with the matching sets as arguments and begin training
+            trainer = Trainer(model, criterion, metrics, optimizer,
+                              config=config,
+                              data_loader=train_loader,
+                              feature_index=feature_index,
+                              cell_neighbor_set=cell_neighbor_set,
+                              drug_neighbor_set=drug_neighbor_set,
+                              valid_data_loader=val_loader,
+                              test_data_loader=test_loader,
+                              lr_scheduler=lr_scheduler)
+            trainer.train()
+
+            """Testing."""
+            logger = config.get_logger(f'test-fold-f{fold_id}')
+            logger.info(model)
+            test_metrics = [getattr(module_metric, met) for met in config['metrics']]
+
+            # load best checkpoint
+            resume = str(config.save_dir / f'model_best_fold_{fold_id}.pth')
+            logger.info('Loading checkpoint: {} ...'.format(resume))
+            checkpoint = torch.load(resume, weights_only=False)
+            state_dict = checkpoint['state_dict']
+            model.load_state_dict(state_dict)
+
+            test_output = trainer.test()
+            log = {'loss': test_output['total_loss'] / test_output['n_samples']}
+            log.update({
+                met.__name__: test_output['total_metrics'][i].item() / test_output['n_samples'] \
+                for i, met in enumerate(test_metrics)
+            })
+            logger.info(log)
+
+            results = {'fold_id': fold_id, 'graph_function': graph_function, 'graph_ratio': ratio}
+            results.update(log)
+            test_results.append(pd.Series(results))
+        # Exit successfully
+        print("Cross validation completed successfully:")
+
     test_results = pd.DataFrame(test_results)
-    test_results.to_csv(config.log_dir / 'test_results.csv', index=False)
+    test_results.to_csv(config.log_dir / f'{graph_function}_{used_db}_test_results_.csv', index=False)
     print(test_results)
 
 
