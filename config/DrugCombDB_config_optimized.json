@@ -5,9 +5,9 @@
     "arch": {
         "type": "GraphSynergy",
         "args": {
-            "emb_dim": 64,
+            "emb_dim": 128,
             "n_hop": 3,
-            "l1_decay": 1e-7,
+            "l1_decay": 1e-6,
             "therapy_method": "transformation_matrix" 
         }
     },
@@ -18,7 +18,7 @@
             "batch_size": 128,
             "score": "synergy 0",
             "n_hop": 3,
-            "n_memory": 128,
+            "n_memory": 256,
             "shuffle": true,
             "validation_split": 0.1,
             "test_split": 0.2,
@@ -29,7 +29,7 @@
         "type": "Adam",
         "args":{
             "lr": 0.001,
-            "weight_decay": 1e-4,
+            "weight_decay": 1e-5,
             "amsgrad": true
         }
     },
