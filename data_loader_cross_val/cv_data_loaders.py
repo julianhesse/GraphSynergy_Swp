@@ -176,11 +176,16 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
         :param ratio_rewire: Ratio of edge rewirings to perform from the total number of edges
         :return: Rewired graph
         """
+        print(f"Building rewired graph with ratio: {ratio_rewire}...")
         graph = self.build_graph()
         total_edges = graph.number_of_edges()
         num_rewirings = int(ratio_rewire * total_edges)
-        # double edge swap is used to preserve the node degrees while also randomly assigning edges
+        """
+        double edge swap is used to preserve the node degrees while also randomly assigning edges.
+        It works by swapping edges between two pairs of nodes, which is repeated for a given number of times.
+        """
         nx.double_edge_swap(graph, nswap=num_rewirings, max_tries=num_rewirings * 10, seed=42)
+        print(f"Graph built with {num_rewirings} rewirings.")
         return graph
 
     def get_target_dict(self):

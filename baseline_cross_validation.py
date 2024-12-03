@@ -1,7 +1,9 @@
 """
-THis is
-Run the following command from the command line:
-    python cross_validation.py --config ./config/DrugCombDB_cv_config.json
+This is the cross validation script for the default configuration of the GraphSynergy model.
+
+Run the following command from the command line based on the dataset you want to use:
+    DrugComboDB: python baseline_cross_validation.py --config ./config/DrugCombDB_cv_config.json
+    OncologyScreen: python baseline_cross_validation.py --config ./config/OncologyScreen_cv_config.json
 """
 
 import argparse

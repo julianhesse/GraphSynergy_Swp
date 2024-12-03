@@ -1,6 +1,10 @@
 """
-Run the following command from the command line:
+This script is used to perform cross-validation on GraphSynergy with alternate graphs building methods and their configurations (altering ratios).
+It iterates through each possible argument in the graph_ratios list, builds the corresponding graph and performs cross-validation on each fold.
+
+Run the following command from the command line based on the dataset you want to use:
     python cross_validation.py --config ./config/DrugCombDB_cv_config.json
+    python cross_validation.py --config ./config/OncologyScreen_cv_config.json
 """
 
 import argparse
@@ -29,7 +33,7 @@ def main(config):
     logger = config.get_logger('data loading')
     # specify the graph building method to use as well as the corresponding ratios
     graph_function = config['data_loader']['args']['graph_building_function']
-    graph_ratios = config['data_loader']['args']['graph_ratios']
+    graph_ratios = config['data_loader']['graph_ratios']
 
     used_db = config['name']
     test_results = []

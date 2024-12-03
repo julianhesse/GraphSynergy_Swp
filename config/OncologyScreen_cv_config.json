@@ -22,9 +22,9 @@
             "num_folds": 5,
             "shuffle": true,
             "num_workers": 2,
-            "graph_building_function": "build_graph",
-            "graph_ratios" : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-        }
+            "graph_building_function": "rewire_graph"
+        },
+        "graph_ratios" : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     },
     "optimizer": {
         "type": "Adam",
@@ -49,8 +49,8 @@
         "epochs": 50,
         "save_dir": "saved/",
         "save_period": 100,
-        "verbosity": 2, 
-        "monitor": "max mcc",
+        "verbosity": 1, 
+        "monitor": "max roc_auc",
         "early_stop": 10,
         "tensorboard": false,
         "log_metrics": true
