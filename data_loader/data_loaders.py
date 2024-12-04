@@ -160,7 +160,7 @@ class DataLoader(BaseDataLoader):
         return dataset
 
     def get_neighbor_set(self, items, item_target_dict):
-        print('constructing neighbor set ...')
+        print('constructing neighbor set ...', end=' ')
 
         neighbor_set = collections.defaultdict(list)
         for item in items:
@@ -180,6 +180,8 @@ class DataLoader(BaseDataLoader):
                     target_list = list(np.random.choice(neighbors, size=self.n_memory, replace=replace))
 
                 neighbor_set[item].append(target_list)
+        
+        print('done')
 
         return neighbor_set
 

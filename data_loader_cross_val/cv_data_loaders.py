@@ -206,14 +206,14 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
         return fold_indices
 
     def get_neighbor_set(self, items, item_target_dict):
-        print('constructing neighbor set ...')
+        print('constructing neighbor set ...', end=' ')
 
         neighbor_set = collections.defaultdict(list)
         for item in items:
             for hop in range(self.n_hop):
                 # use the target directly
                 if hop == 0:
-                    replace = len(item_target_dict[item]) < self.n_memory
+                    replace = len(item_target_dict[item]) < self.n_memory # to fill up missing spots for target_list
                     target_list = list(np.random.choice(item_target_dict[item], size=self.n_memory, replace=replace))
                 else:
                     # use the last one to find k+1 hop neighbors
@@ -227,6 +227,7 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
 
                 neighbor_set[item].append(target_list)
 
+        print('done')
         return neighbor_set
 
     def _save(self):
