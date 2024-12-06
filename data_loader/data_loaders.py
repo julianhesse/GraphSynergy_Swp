@@ -20,11 +20,13 @@ class DataLoader(BaseDataLoader):
                  shuffle=True,
                  validation_split=0.1,
                  test_split=0.2,
-                 num_workers=1):
+                 num_workers=1,
+                 cleanup_neighbors=True):
         self.data_dir = data_dir
         self.score, self.threshold = score.split(' ')
         self.n_hop = n_hop
         self.n_memory = n_memory
+        self.cleanup_neighbors = cleanup_neighbors
 
         # load data
         self.drug_combination_df, self.ppi_df, self.cpi_df, self.dpi_df = self.load_data()
@@ -161,25 +163,49 @@ class DataLoader(BaseDataLoader):
 
     def get_neighbor_set(self, items, item_target_dict):
         print('constructing neighbor set ...', end=' ')
+        
+        if self.cleanup_neighbors:
+            neighbor_set = collections.defaultdict(list)
+            for item in items:
+                for hop in range(self.n_hop):
+                    # use the target directly
+                    if hop == 0:
+                        replace = len(item_target_dict[item]) < self.n_memory
+                        target_list = list(np.random.choice(item_target_dict[item], size=self.n_memory, replace=replace))
+                    else:
+                        # use the last one to find k+1 hop neighbors
+                        origin_nodes = neighbor_set[item][-1]
+                        neighbors = []
+                        for node in origin_nodes:
+                            neighbors += self.graph.neighbors(node)
+                        # sample
+                        replace = len(neighbors) < self.n_memory
+                        target_list = list(np.random.choice(neighbors, size=self.n_memory, replace=replace))
 
-        neighbor_set = collections.defaultdict(list)
-        for item in items:
-            for hop in range(self.n_hop):
-                # use the target directly
-                if hop == 0:
-                    replace = len(item_target_dict[item]) < self.n_memory
-                    target_list = list(np.random.choice(item_target_dict[item], size=self.n_memory, replace=replace))
-                else:
-                    # use the last one to find k+1 hop neighbors
-                    origin_nodes = neighbor_set[item][-1]
-                    neighbors = []
-                    for node in origin_nodes:
-                        neighbors += self.graph.neighbors(node)
-                    # sample
-                    replace = len(neighbors) < self.n_memory
-                    target_list = list(np.random.choice(neighbors, size=self.n_memory, replace=replace))
+                    neighbor_set[item].append(target_list)
+        else:
+            neighbor_set = collections.defaultdict(list)
+            for item in items:
+                neighbors_old = set()
+                for hop in range(self.n_hop):
+                    # use the target directly
+                    if hop == 0:
+                        replace = len(item_target_dict[item]) < self.n_memory
+                        target_list = list(np.random.choice(item_target_dict[item], size=self.n_memory, replace=replace))
+                    else:
+                        # use the last one to find k+1 hop neighbors
+                        origin_nodes = neighbor_set[item][-1]
+                        neighbors = []
+                        for node in origin_nodes:
+                            neighbors += self.graph.neighbors(node)
+                        neighbors = set(neighbors).difference(neighbors_old)
+                        neighbors_old = neighbors_old.union(neighbors)
+                        neighbors = list(neighbors)
+                        # sample
+                        replace = len(neighbors) < self.n_memory
+                        target_list = list(np.random.choice(neighbors, size=self.n_memory, replace=replace))
 
-                neighbor_set[item].append(target_list)
+                    neighbor_set[item].append(target_list)
         
         print('done')
 

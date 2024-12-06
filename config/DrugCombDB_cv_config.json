@@ -21,7 +21,8 @@
             "n_memory": 128,
             "num_folds": 5,
             "shuffle": true,
-            "num_workers": 2
+            "num_workers": 2,
+            "cleanup_neighbors": true
         }
     },
     "optimizer": {
