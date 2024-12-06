@@ -6,7 +6,7 @@ import pandas as pd
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
-from model.GraphSynergy import GraphSynergy as module_arch
+from model.GraphlessSynergy import GraphlessSynergy as module_arch
 from parse_config import ConfigParser
 from trainer.trainer import Trainer
 
@@ -41,7 +41,10 @@ def main(config):
                         emb_dim=config['arch']['args']['emb_dim'],
                         n_hop=config['arch']['args']['n_hop'],
                         l1_decay=config['arch']['args']['l1_decay'],
-                        therapy_method=config['arch']['args']['therapy_method'])
+                        therapy_method=config['arch']['args']['therapy_method'],
+                        use_graph=config['arch']['args']['use_graph'],
+                        n_memory=config['data_loader']['args']['n_memory']
+                        )
     logger.info(model)
 
     # get function handles of loss and metrics
@@ -89,8 +92,8 @@ def main(config):
     })
     logger.info(log)
 
-    results = pd.Series(log)
-    results.to_csv(config.save_dir / 'results.csv', index=False)
+    results = pd.DataFrame(pd.Series(log))
+    results.to_csv(config.log_dir / 'results.csv', index=False)
     logger.info(f"Results of testing saved to 'results.csv'")
     print("Training completed successfully:")
     print(results)

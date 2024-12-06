@@ -3,13 +3,13 @@
     "n_gpu": 1,
 
     "arch": {
-        "type": "GraphSynergy",
+        "type": "GraphlessSynergy",
         "args": {
             "emb_dim": 64,
             "n_hop": 2,
             "l1_decay": 1e-6,
             "therapy_method": "transformation_matrix",
-            "use_graph": true
+            "use_graph": false
         }
     },
     "data_loader": {
@@ -47,7 +47,7 @@
         }
     },
     "trainer": {
-        "epochs": 50,
+        "epochs": 25,
         "save_dir": "saved/",
         "save_period": 100,
         "verbosity": 2, 
