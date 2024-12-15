@@ -1,0 +1,59 @@
+{
+    "name": "DrugCombDB",
+    "n_gpu": 1,
+
+    "arch": {
+        "type": "ComplexSynergy",
+        "args": {
+            "emb_dim": 64,
+            "n_hop": 2,
+            "l1_decay": 1e-6,
+            "therapy_method": "transformation_matrix",
+            "use_graph": true,
+            "dropout": 0.4
+        }
+    },
+    "data_loader": {
+        "type": "DataLoader",
+        "args":{
+            "data_dir": "data/DrugCombDB/",
+            "batch_size": 512,
+            "score": "synergy 0",
+            "n_hop": 2,
+            "n_memory": 128,
+            "shuffle": true,
+            "validation_split": 0.1,
+            "test_split": 0.2,
+            "num_workers": 2,
+            "cleanup_neighbors": true
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 0.001,
+            "weight_decay": 1e-4,
+            "amsgrad": true
+        }
+    },
+    "loss": "bce_withlogits_loss",
+    "metrics": [
+        "accuracy", "precision", "recall", "roc_auc", "pr_auc", "f1_score", "mcc"
+    ],
+    "lr_scheduler": {
+        "type": "CosineAnnealingWarmRestarts",
+        "args": {
+            "T_0": 10
+        }
+    },
+    "trainer": {
+        "epochs": 60,
+        "save_dir": "saved/",
+        "save_period": 100,
+        "verbosity": 2, 
+        "monitor": "max roc_auc",
+        "early_stop": 10,
+        "tensorboard": false,
+        "log_metrics": true
+    }
+}
