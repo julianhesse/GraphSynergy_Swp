@@ -6,9 +6,10 @@ import pandas as pd
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
-from model.GraphlessSynergy import GraphlessSynergy as module_arch
+# from model.GraphlessSynergy import GraphlessSynergy as module_arch
 from parse_config import ConfigParser
 from trainer.trainer import Trainer
+import importlib
 
 # fix random seeds for reproducibility
 SEED = 42
@@ -34,15 +35,14 @@ def main(config):
     drug_neighbor_set = data_loader.get_drug_neighbor_set()
     node_num_dict = data_loader.get_node_num_dict()
 
+    module = importlib.import_module('model.' + config['arch']['type'])
+    module_arch = getattr(module, config['arch']['type'])
+
     # (an instance of GraphSynergy) is initialized with parameters like protein_num and cell_num
     model = module_arch(protein_num=node_num_dict['protein'],
                         cell_num=node_num_dict['cell'],
                         drug_num=node_num_dict['drug'],
-                        emb_dim=config['arch']['args']['emb_dim'],
-                        n_hop=config['arch']['args']['n_hop'],
-                        l1_decay=config['arch']['args']['l1_decay'],
-                        therapy_method=config['arch']['args']['therapy_method'],
-                        use_graph=config['arch']['args']['use_graph'],
+                        **config['arch']['args'],
                         n_memory=config['data_loader']['args']['n_memory']
                         )
     logger.info(model)
@@ -92,7 +92,7 @@ def main(config):
     })
     logger.info(log)
 
-    results = pd.DataFrame(pd.Series(log))
+    results = pd.DataFrame([pd.Series(log)])
     results.to_csv(config.log_dir / 'results.csv', index=False)
     logger.info(f"Results of testing saved to 'results.csv'")
     print("Training completed successfully:")

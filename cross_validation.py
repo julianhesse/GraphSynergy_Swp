@@ -11,9 +11,10 @@ import pandas as pd
 import data_loader_cross_val.cv_data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
-from model.GraphlessSynergy import GraphlessSynergy as module_arch
+# from model.GraphlessSynergy import GraphlessSynergy as module_arch
 from parse_config import ConfigParser
 from trainer.trainer import Trainer
+import importlib
 
 # fix random seeds for reproducibility
 SEED = 42
@@ -37,6 +38,9 @@ def main(config):
     drug_neighbor_set = data_loader.get_drug_neighbor_set()
     node_num_dict = data_loader.get_node_num_dict()
 
+    module = importlib.import_module('model.' + config['arch']['type'])
+    module_arch = getattr(module, config['arch']['type'])
+
     test_results = []
     # get folds from the data_loader and iterate through each
     for fold_id in data_loader.get_fold_indices().keys():
@@ -48,11 +52,7 @@ def main(config):
         model = module_arch(protein_num=node_num_dict['protein'],
                             cell_num=node_num_dict['cell'],
                             drug_num=node_num_dict['drug'],
-                            emb_dim=config['arch']['args']['emb_dim'],
-                            n_hop=config['arch']['args']['n_hop'],
-                            l1_decay=config['arch']['args']['l1_decay'],
-                            therapy_method=config['arch']['args']['therapy_method'],
-                            use_graph=config['arch']['args']['use_graph'],
+                            **config['arch']['args'],
                             n_memory=config['data_loader']['args']['n_memory']
                             )
         logger.info(model)
@@ -120,7 +120,7 @@ def main(config):
     # Exit successfully
     print("Cross validation completed successfully:")
     test_results = pd.DataFrame(test_results)
-    test_results.to_csv(config.log_dir / 'test_results.csv', index=False)
+    test_results.to_csv(config.log_dir / 'results.csv', index=False)
     print(test_results)
 
 

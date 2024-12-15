@@ -3,7 +3,7 @@
     "n_gpu": 1,
 
     "arch": {
-        "type": "GraphlessSynergy",
+        "type": "SimpleSynergy",
         "args": {
             "emb_dim": 64,
             "n_hop": 2,
@@ -13,18 +13,17 @@
         }
     },
     "data_loader": {
-        "type": "DataLoader",
+        "type": "CrossValidationDataLoader",
         "args":{
             "data_dir": "data/DrugCombDB/",
             "batch_size": 512,
             "score": "synergy 0",
             "n_hop": 2,
             "n_memory": 128,
+            "num_folds": 5,
             "shuffle": true,
-            "validation_split": 0.1,
-            "test_split": 0.2,
             "num_workers": 2,
-            "cleanup_neighbors": true
+            "cleanup_neighbors": false
         }
     },
     "optimizer": {
@@ -51,7 +50,7 @@
         "save_dir": "saved/",
         "save_period": 100,
         "verbosity": 2, 
-        "monitor": "max roc_auc",
+        "monitor": "max mcc",
         "early_stop": 10,
         "tensorboard": false,
         "log_metrics": true

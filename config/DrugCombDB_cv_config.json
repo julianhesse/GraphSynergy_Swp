@@ -8,7 +8,8 @@
             "emb_dim": 64,
             "n_hop": 2,
             "l1_decay": 1e-6,
-            "therapy_method": "transformation_matrix" 
+            "therapy_method": "transformation_matrix",
+            "use_graph": true
         }
     },
     "data_loader": {
