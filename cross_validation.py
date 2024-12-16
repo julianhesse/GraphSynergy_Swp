@@ -44,6 +44,7 @@ def main(config):
         # setup data_loader instances
         # Loads and pre-processes the data
         data_loader = module_data.CrossValidationDataLoader(
+            csv_type=config['data_loader']['args']['csv_type'],
             data_dir=config['data_loader']['args']['data_dir'],
             batch_size=config['data_loader']['args']['batch_size'],
             score=config['data_loader']['args']['score'],

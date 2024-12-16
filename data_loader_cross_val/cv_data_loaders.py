@@ -14,6 +14,7 @@ from data_loader_cross_val.cv_base_data_loader import CrossValidationBaseDataLoa
 
 class CrossValidationDataLoader(CrossValidationBaseDataLoader):
     def __init__(self,
+                 csv_type,
                  data_dir,
                  batch_size,
                  score='synergy 0',
@@ -24,6 +25,7 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
                  num_workers=1,
                  graph_building_function="build_graph",
                  graph_ratio=0.1):
+        self.csv_type = csv_type
         self.data_dir = data_dir
         self.score, self.threshold = score.split(' ')
         self.n_hop = n_hop
@@ -89,7 +91,13 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
         return self.fold_indices
 
     def load_data(self):
-        drug_combination_df = pd.read_csv(os.path.join(self.data_dir, 'drug_combinations.csv'))
+        assert self.csv_type in ['default', 'cleaned'], 'csv_type should be either default or cleaned'
+        if self.csv_type == 'default':
+            print('Using default data...')
+            drug_combination_df = pd.read_csv(os.path.join(self.data_dir, 'drug_combinations.csv'))
+        elif self.csv_type == 'cleaned':
+            print('Using cleaned data...')
+            drug_combination_df = pd.read_csv(os.path.join(self.data_dir, 'drug_combination_cleaned.csv'))
         ppi_df = pd.read_excel(os.path.join(self.data_dir, 'protein-protein_network.xlsx'))
         cpi_df = pd.read_csv(os.path.join(self.data_dir, 'cell_protein.csv'))
         dpi_df = pd.read_csv(os.path.join(self.data_dir, 'drug_protein.csv'))
@@ -260,10 +268,15 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
                     origin_nodes = neighbor_set[item][-1]
                     neighbors = []
                     for node in origin_nodes:
-                        neighbors += self.graph.neighbors(node)
-                    # sample
-                    replace = len(neighbors) < self.n_memory
-                    target_list = list(np.random.choice(neighbors, size=self.n_memory, replace=replace))
+                        node_neighbors = list(self.graph.neighbors(node))
+                        if not node_neighbors:
+                            # If the node has no neighbors, add the node itself
+                            neighbors.append(node)
+                        else:
+                            neighbors += node_neighbors
+                        # sample
+                        replace = len(neighbors) < self.n_memory
+                        target_list = list(np.random.choice(neighbors, size=self.n_memory, replace=replace))
 
                 neighbor_set[item].append(target_list)
 
