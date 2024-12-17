@@ -19,81 +19,86 @@ torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
 def main(config):
-    """Training."""
-    logger = config.get_logger('train')
+    all_results = []  # List to collect results from all runs
 
-    # setup data_loader instances
-    # Loads and pre-processes the data
-    data_loader = config.init_obj('data_loader', module_data)
-    # creates validation and test datasets
-    valid_data_loader = data_loader.split_dataset(valid=True)
-    test_data_loader = data_loader.split_dataset(test=True)
-    # get functions extract specific data attributes for use in the model
-    feature_index = data_loader.get_feature_index()
-    cell_neighbor_set = data_loader.get_cell_neighbor_set()
-    drug_neighbor_set = data_loader.get_drug_neighbor_set()
-    node_num_dict = data_loader.get_node_num_dict()
+    for run in range(1, 6):  # Loop to perform training 5 times
+        """Training."""
+        logger = config.get_logger(f'train_run_{run}')  # Name logger for each run
 
-    # (an instance of GraphSynergy) is initialized with parameters like protein_num and cell_num
-    model = module_arch(protein_num=node_num_dict['protein'],
-                        cell_num=node_num_dict['cell'],
-                        drug_num=node_num_dict['drug'],
-                        emb_dim=config['arch']['args']['emb_dim'],
-                        n_hop=config['arch']['args']['n_hop'],
-                        l1_decay=config['arch']['args']['l1_decay'],
-                        therapy_method=config['arch']['args']['therapy_method'])
-    logger.info(model)
+        # Setup data_loader instances
+        data_loader = config.init_obj('data_loader', module_data)
+        valid_data_loader = data_loader.split_dataset(valid=True)
+        test_data_loader = data_loader.split_dataset(test=True)
+        feature_index = data_loader.get_feature_index()
+        cell_neighbor_set = data_loader.get_cell_neighbor_set()
+        drug_neighbor_set = data_loader.get_drug_neighbor_set()
+        node_num_dict = data_loader.get_node_num_dict()
 
-    # get function handles of loss and metrics
-    # Specifies the loss function (error function) from module_loss
-    criterion = getattr(module_loss, config['loss'])
-    # List of functions (like accuracy or precision) to evaluate model performance.
-    metrics = [getattr(module_metric, met) for met in config['metrics']]
+        # Initialize model
+        model = module_arch(protein_num=node_num_dict['protein'],
+                            cell_num=node_num_dict['cell'],
+                            drug_num=node_num_dict['drug'],
+                            emb_dim=config['arch']['args']['emb_dim'],
+                            n_hop=config['arch']['args']['n_hop'],
+                            l1_decay=config['arch']['args']['l1_decay'],
+                            therapy_method=config['arch']['args']['therapy_method'])
+        logger.info(model)
 
-    # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
-    # List of functions (like accuracy or precision) to evaluate model performance
-    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    # Manages gradient updates
-    optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
+        # Loss function and metrics
+        criterion = getattr(module_loss, config['loss'])
+        metrics = [getattr(module_metric, met) for met in config['metrics']]
 
-    lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
+        # Optimizer and scheduler
+        trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+        optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
+        lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
 
-    trainer = Trainer(model, criterion, metrics, optimizer,
-                      config=config,
-                      data_loader=data_loader,
-                      feature_index=feature_index,
-                      cell_neighbor_set=cell_neighbor_set,
-                      drug_neighbor_set=drug_neighbor_set,
-                      valid_data_loader=valid_data_loader,
-                      test_data_loader=test_data_loader,
-                      lr_scheduler=lr_scheduler)
-    trainer.train()
+        # Trainer instance
+        trainer = Trainer(model, criterion, metrics, optimizer,
+                          config=config,
+                          data_loader=data_loader,
+                          feature_index=feature_index,
+                          cell_neighbor_set=cell_neighbor_set,
+                          drug_neighbor_set=drug_neighbor_set,
+                          valid_data_loader=valid_data_loader,
+                          test_data_loader=test_data_loader,
+                          lr_scheduler=lr_scheduler)
+        trainer.train()
 
-    """Testing."""
-    logger = config.get_logger('test')
-    logger.info(model)
-    test_metrics = [getattr(module_metric, met) for met in config['metrics']]
-    
-    # load best checkpoint
-    resume = str(config.save_dir / 'model_best.pth')
-    logger.info('Loading checkpoint: {} ...'.format(resume))
-    checkpoint = torch.load(resume, weights_only=False)
-    state_dict = checkpoint['state_dict']
-    model.load_state_dict(state_dict)
+        """Testing."""
+        logger = config.get_logger(f'test_run_{run}')
+        logger.info(model)
+        test_metrics = [getattr(module_metric, met) for met in config['metrics']]
 
-    test_output = trainer.test()
-    log = {'loss': test_output['total_loss'] / test_output['n_samples']}
-    log.update({
-        met.__name__: test_output['total_metrics'][i].item() / test_output['n_samples'] \
-            for i, met in enumerate(test_metrics)
-    })
-    logger.info(log)
+        # Load best checkpoint
+        resume = str(config.save_dir / 'model_best.pth')
+        logger.info('Loading checkpoint: {} ...'.format(resume))
+        checkpoint = torch.load(resume, weights_only=False)
+        state_dict = checkpoint['state_dict']
+        model.load_state_dict(state_dict)
 
-    results = pd.Series(log)
-    results.to_csv(config.save_dir / 'results.csv', index=False)
-    logger.info(f"Results of testing saved to 'results.csv'")
-    print("Training completed successfully:")
-    print(results)
+        # Run testing
+        test_output = trainer.test()
+        log = {'run': run, 'loss': test_output['total_loss'] / test_output['n_samples']}
+        log.update({
+            met.__name__: test_output['total_metrics'][i].item() / test_output['n_samples'] \
+                for i, met in enumerate(test_metrics)
+        })
+
+        logger.info(log)
+
+        # Append results to the all_results list
+        all_results.append(log)
+        print(f"Run {run} completed.")
+        print(log)
+
+    # Save all results to a CSV file after all runs
+    results_df = pd.DataFrame(all_results)
+    results_csv_path = config.save_dir / 'all_runs_results.csv'
+    results_df.to_csv(results_csv_path, index=False)
+    logger.info(f"Results from all runs saved to '{results_csv_path}'")
+    print("Training completed successfully for all runs:")
+    print(results_df)
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')
