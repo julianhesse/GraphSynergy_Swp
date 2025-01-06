@@ -10,7 +10,8 @@
             "l1_decay": 1e-6,
             "therapy_method": "transformation_matrix",
             "use_graph": true,
-            "dropout": 0.4
+            "dropout": 0.3,
+            "num_layers": 3
         }
     },
     "data_loader": {
@@ -47,7 +48,7 @@
         }
     },
     "trainer": {
-        "epochs": 60,
+        "epochs": 50,
         "save_dir": "saved/",
         "save_period": 100,
         "verbosity": 2, 

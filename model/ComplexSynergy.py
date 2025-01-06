@@ -4,6 +4,37 @@ import torch.nn.functional as F
 
 from base import BaseModel
 
+class AttentionLayer(nn.Module):
+    def __init__(self, embed_dim, num_heads, dropout):
+        super(AttentionLayer, self).__init__()
+
+        self.attn = nn.MultiheadAttention(embed_dim, 4, dropout=dropout, batch_first=True)
+
+        self.linear_net = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim),
+            nn.Dropout(dropout),
+            nn.ReLU(inplace=True),
+            nn.Linear(embed_dim, embed_dim)
+        )
+        
+        self.norm1 = nn.LayerNorm(embed_dim)
+        self.norm2 = nn.LayerNorm(embed_dim)
+        self.dropout = nn.Dropout(dropout)
+    
+    def forward(self, inputs):
+        attn_out, _ = self.attn(inputs, inputs, inputs)
+
+        x = inputs + self.dropout(attn_out)
+        x = self.norm1(x)
+
+        # MLP part
+        linear_out = self.linear_net(x)
+        x = x + self.dropout(linear_out)
+        x = self.norm2(x)
+
+        return x
+
+
 class ComplexSynergy(BaseModel):
     def __init__(self, 
                  protein_num, 
@@ -15,6 +46,7 @@ class ComplexSynergy(BaseModel):
                  therapy_method,
                  use_graph,
                  dropout,
+                 num_layers,
                  n_memory):
         super(ComplexSynergy, self).__init__()
         self.protein_num = protein_num
@@ -31,18 +63,7 @@ class ComplexSynergy(BaseModel):
         self.drug_embedding = nn.Embedding(self.drug_num, self.emb_dim)
         # self.aggregation_function = nn.Linear(self.emb_dim*self.n_hop, self.emb_dim)
 
-        self.attn = nn.MultiheadAttention(self.emb_dim*3, 1, dropout=dropout)
-
-        self.linear_net = nn.Sequential(
-            nn.Linear(self.emb_dim*3, self.emb_dim*3),
-            nn.Dropout(dropout),
-            nn.ReLU(inplace=True),
-            nn.Linear(self.emb_dim*3, self.emb_dim*3)
-        )
-        
-        self.norm1 = nn.LayerNorm(self.emb_dim*3)
-        self.norm2 = nn.LayerNorm(self.emb_dim*3)
-        self.dropout = nn.Dropout(dropout)
+        self.attn_layers = nn.ModuleList([AttentionLayer(self.emb_dim, 1, dropout) for i in range(num_layers)])
 
         self.classifier = nn.Linear(self.emb_dim*3, 1)
 
@@ -60,16 +81,12 @@ class ComplexSynergy(BaseModel):
         emb_loss = self._emb_loss(cell_embeddings, drug1_embeddings, drug2_embeddings)
 
         # Attention part
-        embeddings = torch.cat([cell_embeddings, drug1_embeddings, drug2_embeddings], dim=1)
-        attn_out, _ = self.attn(embeddings, embeddings, embeddings)
+        embeddings = torch.stack([cell_embeddings, drug1_embeddings, drug2_embeddings], dim=-2)
 
-        x = embeddings + self.dropout(attn_out)
-        x = self.norm1(x)
+        for attn_layer in self.attn_layers:
+            embeddings = attn_layer(embeddings)
 
-        # MLP part
-        linear_out = self.linear_net(x)
-        x = x + self.dropout(linear_out)
-        x = self.norm2(x)
+        x = embeddings.reshape(-1, self.emb_dim*3)
 
         score = self.classifier(x)
         # score = self._therapy(drug1_embeddings, drug2_embeddings, cell_embeddings) - \
