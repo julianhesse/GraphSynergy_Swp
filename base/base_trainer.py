@@ -84,8 +84,8 @@ class BaseTrainer:
             for key in ['train', 'validation']:
                 if key not in log:
                     continue
-                value_format = ''.join(['{:15s}: {:.2f}\t'.format(k, v) for k, v in log[key].items()])
-                self.logger.info('    {:15s}: {}'.format(str(key), value_format))
+                value_format = ''.join(['{:14s}: {:.3f}\t'.format(k, v) for k, v in log[key].items()])
+                self.logger.info('    {:14s}: {}'.format(str(key), value_format))
 
             # collect metrics for later analysis
             if self.log_metrics:
