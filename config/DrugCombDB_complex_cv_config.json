@@ -10,7 +10,8 @@
             "l1_decay": 1e-6,
             "therapy_method": "transformation_matrix",
             "use_graph": true,
-            "dropout": 0.3
+            "dropout": 0.3,
+            "num_layers": 6
         }
     },
     "data_loader": {

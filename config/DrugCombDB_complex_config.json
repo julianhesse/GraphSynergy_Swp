@@ -10,8 +10,8 @@
             "l1_decay": 1e-6,
             "therapy_method": "transformation_matrix",
             "use_graph": true,
-            "dropout": 0.3,
-            "num_layers": 3
+            "dropout": 0.35,
+            "num_layers": 9
         }
     },
     "data_loader": {
@@ -42,13 +42,13 @@
         "accuracy", "precision", "recall", "roc_auc", "pr_auc", "f1_score", "mcc"
     ],
     "lr_scheduler": {
-        "type": "CosineAnnealingWarmRestarts",
+        "type": "CosineAnnealingLR",
         "args": {
-            "T_0": 10
+            "T_max": 50
         }
     },
     "trainer": {
-        "epochs": 50,
+        "epochs": 65,
         "save_dir": "saved/",
         "save_period": 100,
         "verbosity": 2, 
