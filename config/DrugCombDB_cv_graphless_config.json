@@ -3,7 +3,7 @@
     "n_gpu": 1,
 
     "arch": {
-        "type": "GraphSynergy",
+        "type": "GraphlessSynergy",
         "args": {
             "emb_dim": 128,
             "n_hop": 2,
