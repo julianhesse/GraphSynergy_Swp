@@ -34,12 +34,21 @@ def main(config):
     # specify the graph building method to use as well as the corresponding ratios
     graph_function = config['data_loader']['args']['graph_building_function']
     graph_ratios = config['data_loader']['graph_ratios']
+    ftype = config['data_loader']['args']['fold_type']
+
+    logger.info(f"Fold Separation: {ftype}")
 
     used_db = config['name']
     test_results = []
+    if graph_function == 'build_graph':
+        graph_ratios = [None]  # Only run the inner loop once if graph isn't modified
 
     for ratio in graph_ratios:
-        logger.info(f"Graph Function: {graph_function}, Graph Ratio: {ratio}")
+
+        if ratio:
+            logger.info(f"Graph Function: {graph_function}, Graph Ratio: {ratio}")
+        else:
+            logger.info(f"Default graph is being built using {graph_function}")
 
         # setup data_loader instances
         # Loads and pre-processes the data
@@ -54,7 +63,8 @@ def main(config):
             shuffle=config['data_loader']['args']['shuffle'],
             num_workers=config['data_loader']['args']['num_workers'],
             graph_building_function=graph_function,
-            graph_ratio=ratio
+            graph_ratio=ratio,
+            fold_type=ftype
         )
         # get functions extract specific data attributes for use in the model
         feature_index = data_loader.get_feature_index()

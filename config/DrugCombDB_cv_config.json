@@ -23,7 +23,8 @@
             "num_folds": 5,
             "shuffle": true,
             "num_workers": 2,
-            "graph_building_function": "build_randomized_graph"
+            "graph_building_function": "build_randomized_graph",
+            "fold_type": "cell"
         },
         "graph_ratios" : [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     },

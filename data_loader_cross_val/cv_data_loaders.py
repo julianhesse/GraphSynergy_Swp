@@ -24,7 +24,8 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
                  shuffle=True,
                  num_workers=1,
                  graph_building_function="build_graph",
-                 graph_ratio=0.1):
+                 graph_ratio=0.1,
+                 fold_type="drug_combination",):
         self.csv_type = csv_type
         self.data_dir = data_dir
         self.score, self.threshold = score.split(' ')
@@ -45,7 +46,12 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
 
         # THIS IS THE STEP WHERE YOU NEED TO CREATE THE FOLDS
         # creates a list of lists containing dataframe row indices for k-folds cross validation
-        self.fold_indices = self.create_fold_indices(num_folds)
+        if fold_type == "drug_combination":
+            self.fold_indices = self.create_fold_indices(num_folds)
+        elif fold_type == "cell":
+            self.fold_indices = self.create_fold_indices_cell(num_folds)
+        else:
+            raise ValueError(f"Invalid fold type: {fold_type}")
         # create dataloader
         super().__init__(self.dataset, batch_size, self.fold_indices, shuffle, num_workers)
 
@@ -58,7 +64,7 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
                 # case where the model is built using edge shuffling implementations
                 graph_method = getattr(self, self.graph_building_function)
                 self.graph = graph_method(self.graph_ratio)
-        # insure that a valid graph building function is provided
+        # ensure that a valid graph building function is provided
         except AttributeError:
             raise ValueError(f"Invalid graph building function: {self.graph_building_function}")
         
@@ -247,9 +253,24 @@ class CrossValidationDataLoader(CrossValidationBaseDataLoader):
             fold = idx % n_folds
             # add rows with drug combination to fold
             fold_indices[fold].extend(row_idx)
-
         # total number of indices from the folds must be equal to the dataset  size
         assert sum([len(x) for x in fold_indices.values()]) == len(self.drug_combination_df), "Folds do not have the same number of items as the dataset"
+
+        return fold_indices
+
+    def create_fold_indices_cell(self, n_folds=5):
+        fold_indices = collections.defaultdict(list)
+        # iterate through each unique drug combination
+        for idx, cell in enumerate(self.drug_combination_df['cell'].unique()):
+            # identify rows with drug combination
+            row_idx = self.drug_combination_df.loc[self.drug_combination_df['cell'] == cell].index
+            # rotate through the folds throughout the loop
+            fold = idx % n_folds
+            # add rows with drug combination to fold
+            fold_indices[fold].extend(row_idx)
+        # total number of indices from the folds must be equal to the dataset  size
+        assert sum([len(x) for x in fold_indices.values()]) == len(
+            self.drug_combination_df), "Folds do not have the same number of items as the dataset"
 
         return fold_indices
 
