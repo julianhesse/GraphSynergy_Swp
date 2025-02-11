@@ -73,7 +73,7 @@ def main(config):
     logger = config.get_logger('test')
     logger.info(model)
     test_metrics = [getattr(module_metric, met) for met in config['metrics']]
-    
+
     # load best checkpoint
     resume = str(config.save_dir / 'model_best.pth')
     logger.info('Loading checkpoint: {} ...'.format(resume))
@@ -82,18 +82,26 @@ def main(config):
     model.load_state_dict(state_dict)
 
     test_output = trainer.test()
-    log = {'loss': test_output['total_loss'] / test_output['n_samples']}
+    log = {
+        'loss': test_output['total_loss'] / test_output['n_samples'],
+        'n_samples': test_output['n_samples']
+    }
     log.update({
-        met.__name__: test_output['total_metrics'][i].item() / test_output['n_samples'] \
-            for i, met in enumerate(test_metrics)
+        met.__name__: test_output['total_metrics'][i].item() / test_output['n_samples']
+        for i, met in enumerate(test_metrics)
     })
     logger.info(log)
 
-    results = pd.Series(log)
-    results.to_csv(config.save_dir / 'results.csv', index=False)
-    logger.info(f"Results of testing saved to 'results.csv'")
+    # Convert to DataFrame for better CSV formatting
+    results_df = pd.DataFrame([log])  # Convert dictionary to DataFrame
+
+    # Save as CSV (append if file exists)
+    csv_path = config.save_dir / 'IQR_3.csv'
+    results_df.to_csv(csv_path, index=False, mode='a', header=not csv_path.exists())
+
+    logger.info(f"Results of testing saved to 'IQR_3.csv'")
     print("Training completed successfully:")
-    print(results)
+    print(results_df)
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')

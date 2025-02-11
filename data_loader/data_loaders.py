@@ -66,12 +66,23 @@ class DataLoader(BaseDataLoader):
 
     def get_node_num_dict(self):
         return self.node_num_dict
+    
+    def remove_outliers(self, df, column, iqr_multiplyer):
+        """Removes outliers from a DataFrame based on the IQR method."""
+        Q1 = df[column].quantile(0.25)
+        Q3 = df[column].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - iqr_multiplyer * IQR
+        upper_bound = Q3 + iqr_multiplyer * IQR
+        return df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
 
     def load_data(self):
         drug_combination_df = pd.read_csv(os.path.join(self.data_dir, 'drug_combinations.csv'))
         ppi_df = pd.read_excel(os.path.join(self.data_dir, 'protein-protein_network.xlsx'))
         cpi_df = pd.read_csv(os.path.join(self.data_dir, 'cell_protein.csv'))
         dpi_df = pd.read_csv(os.path.join(self.data_dir, 'drug_protein.csv'))
+
+        #drug_combination_df = self.remove_outliers(drug_combination_df, 'synergy', 3.0)
 
         return drug_combination_df, ppi_df, cpi_df, dpi_df
 
