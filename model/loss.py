@@ -22,7 +22,7 @@ def hard_negative_mining(output, target, neg_pos_ratio=3):
         target (torch.Tensor): The ground truth labels.
         neg_pos_ratio (int): The ratio of negative to positive samples to keep.
     Returns:
-        torch.Tensor: The indices of the samples to keep.
+        torch.Tensor: The indices of the samples to keep. (CoPilot)
     """
     pos_mask = target > 0
     neg_mask = target == 0
