@@ -24,7 +24,8 @@
             "validation_split": 0.1,
             "test_split": 0.2,
             "num_workers": 2,
-            "cleanup_neighbors": true
+            "cleanup_neighbors": true,
+            "randomize_classes": false
         }
     },
     "optimizer": {

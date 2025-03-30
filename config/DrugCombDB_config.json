@@ -3,12 +3,13 @@
     "n_gpu": 1,
 
     "arch": {
-        "type": "GraphSynergy",
+        "type": "GraphlessSynergy",
         "args": {
             "emb_dim": 64,
             "n_hop": 2,
             "l1_decay": 1e-6,
-            "therapy_method": "transformation_matrix"
+            "therapy_method": "transformation_matrix",
+            "use_graph": true
         }
     },
     "data_loader": {
@@ -23,7 +24,8 @@
             "validation_split": 0.1,
             "test_split": 0.2,
             "num_workers": 2,
-            "cleanup_neighbors": true
+            "cleanup_neighbors": true,
+            "randomize_classes": true
         }
     },
     "optimizer": {

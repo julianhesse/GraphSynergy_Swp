@@ -21,12 +21,14 @@ class DataLoader(BaseDataLoader):
                  validation_split=0.1,
                  test_split=0.2,
                  num_workers=1,
-                 cleanup_neighbors=True):
+                 cleanup_neighbors=True,
+                 randomize_classes=False):
         self.data_dir = data_dir
         self.score, self.threshold = score.split(' ')
         self.n_hop = n_hop
         self.n_memory = n_memory
         self.cleanup_neighbors = cleanup_neighbors
+        self.randomize_classes = randomize_classes
 
         # load data
         self.drug_combination_df, self.ppi_df, self.cpi_df, self.dpi_df = self.load_data()
@@ -118,6 +120,16 @@ class DataLoader(BaseDataLoader):
     def drug_combination_process(self):
         self.drug_combination_df['synergistic'] = [0] * len(self.drug_combination_df)
         self.drug_combination_df.loc[self.drug_combination_df[self.score] > eval(self.threshold), 'synergistic'] = 1
+        # shuffle classes for testing if wanted
+        if self.randomize_classes:
+            print('shuffle', type(self.drug_combination_df['synergistic']))
+            print(self.drug_combination_df['synergistic'])
+            classes = self.drug_combination_df['synergistic'].to_numpy()
+            print(classes)
+            np.random.shuffle(classes)
+            self.drug_combination_df['synergistic'] = classes
+            print(self.drug_combination_df['synergistic'])
+
         self.drug_combination_df.to_csv(os.path.join(self.data_dir, 'drug_combination_processed.csv'), index=False)
 
         self.drug_combination_df = self.drug_combination_df[['cell', 'drug1_db', 'drug2_db', 'synergistic']]
