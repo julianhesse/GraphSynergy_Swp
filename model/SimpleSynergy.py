@@ -5,6 +5,8 @@ import torch.nn.functional as F
 from base import BaseModel
 
 class SimpleSynergy(BaseModel):
+    """Based on the original model, but cuts out the embedding of the proteins together with
+    their neighbors in the PPI graph."""
     def __init__(self, 
                  protein_num, 
                  cell_num,

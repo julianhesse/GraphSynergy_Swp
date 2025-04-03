@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from base import BaseModel
 
 class GraphlessSynergy(BaseModel):
+    """Same model as the paper, but with the option to replace the input of neighbors with learnable weights."""
     def __init__(self, 
                  protein_num, 
                  cell_num,
@@ -16,7 +17,7 @@ class GraphlessSynergy(BaseModel):
                  use_graph,
                  n_memory):
         super(GraphlessSynergy, self).__init__()
-        self.protein_num = protein_num
+        self.protein_num = protein_num 
         self.cell_num = cell_num
         self.drug_num = drug_num
         self.emb_dim = emb_dim
@@ -31,6 +32,7 @@ class GraphlessSynergy(BaseModel):
         self.aggregation_function = nn.Linear(self.emb_dim*self.n_hop, self.emb_dim)
         
         if not self.use_graph:
+            # initializes weights that replace the input of the neighbors
             self.cell_neighbor_weights = nn.ParameterList([
                     nn.Parameter(torch.randn((n_memory, self.emb_dim))) for _ in range(self.n_hop)
                 ])
@@ -40,8 +42,6 @@ class GraphlessSynergy(BaseModel):
             self.drug2_neighbor_weights = nn.ParameterList([
                     nn.Parameter(torch.randn((n_memory, self.emb_dim))) for _ in range(self.n_hop)
                 ])
-        
-        self.test = nn.Parameter(torch.randn(5))
 
         if self.therapy_method == 'transformation_matrix':
             self.combine_function = nn.Linear(self.emb_dim*2, self.emb_dim, bias=False)
@@ -59,7 +59,9 @@ class GraphlessSynergy(BaseModel):
         drug1_embeddings = self.drug_embedding(drug1)
         drug2_embeddings = self.drug_embedding(drug2)
 
+        # either use the neighbors from the graph or the learnable weights
         if self.use_graph:
+            # uses the neighbors, same as the original model
             cell_neighbors_emb_list = self._get_neighbor_emb(cell_neighbors)
             drug1_neighbors_emb_list = self._get_neighbor_emb(drug1_neighbors)
             drug2_neighbors_emb_list = self._get_neighbor_emb(drug2_neighbors)
@@ -74,6 +76,7 @@ class GraphlessSynergy(BaseModel):
             drug2_i_list = self._interaction_aggregation(drug2_embeddings, drug2_neighbors_emb_list)
 
         else:
+            # uses the learnable weights
             # cell_neighbors_emb_list = self._get_neighbor_weights(cell_neighbors)
             # drug1_neighbors_emb_list = self._get_neighbor_weights(drug1_neighbors)
             # drug2_neighbors_emb_list = self._get_neighbor_weights(drug2_neighbors)
@@ -87,9 +90,6 @@ class GraphlessSynergy(BaseModel):
                                     drug2_embeddings, self.cell_neighbor_weights,
                                     self.drug1_neighbor_weights, self.drug2_neighbor_weights)
 
-        # cell_i_list = self._interaction_aggregation(cell_embeddings, cell_neighbors_emb_list)
-        # drug1_i_list = self._interaction_aggregation(drug1_embeddings, drug1_neighbors_emb_list)
-        # drug2_i_list = self._interaction_aggregation(drug2_embeddings, drug2_neighbors_emb_list)
 
         # [batch_size, dim]
         cell_embeddings = self._aggregation(cell_i_list)

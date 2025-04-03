@@ -5,6 +5,9 @@ import torch.nn.functional as F
 from base import BaseModel
 
 class AttentionLayer(nn.Module):
+    """A class to generate attention blocks. It consists of a attention layer in combination with a
+    normalization layer followed by a feed forward layer also with a normalization layer. Both of
+    them also have skip connections."""
     def __init__(self, embed_dim, num_heads, dropout):
         super(AttentionLayer, self).__init__()
 
@@ -22,15 +25,15 @@ class AttentionLayer(nn.Module):
         self.dropout = nn.Dropout(dropout)
     
     def forward(self, inputs):
-        attn_out, _ = self.attn(inputs, inputs, inputs)
+        attn_out, _ = self.attn(inputs, inputs, inputs) # multihead attention
 
-        x = inputs + self.dropout(attn_out)
-        x = self.norm1(x)
+        x = inputs + self.dropout(attn_out) # skip connection + dropout
+        x = self.norm1(x) # layer normalization
 
         # MLP part
         linear_out = self.linear_net(x)
-        x = x + self.dropout(linear_out)
-        x = self.norm2(x)
+        x = x + self.dropout(linear_out) # skip connection + dropout
+        x = self.norm2(x) # layer normalization
 
         return x
 
@@ -61,7 +64,6 @@ class ComplexSynergy(BaseModel):
         self.protein_embedding = nn.Embedding(self.protein_num, self.emb_dim)
         self.cell_embedding = nn.Embedding(self.cell_num, self.emb_dim)
         self.drug_embedding = nn.Embedding(self.drug_num, self.emb_dim)
-        # self.aggregation_function = nn.Linear(self.emb_dim*self.n_hop, self.emb_dim)
 
         self.attn_layers = nn.ModuleList([AttentionLayer(self.emb_dim, 1, dropout) for i in range(num_layers)])
 
@@ -83,14 +85,14 @@ class ComplexSynergy(BaseModel):
         # Attention part
         embeddings = torch.stack([cell_embeddings, drug1_embeddings, drug2_embeddings], dim=-2)
 
+        # cycle through the attention layers
         for attn_layer in self.attn_layers:
             embeddings = attn_layer(embeddings)
 
+        # reshape for linear classifier layer
         x = embeddings.reshape(-1, self.emb_dim*3)
 
         score = self.classifier(x)
-        # score = self._therapy(drug1_embeddings, drug2_embeddings, cell_embeddings) - \
-        #         self._toxic(drug1_embeddings, drug2_embeddings)
 
         score = score.reshape(-1)
         return score, emb_loss
